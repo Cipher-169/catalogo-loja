@@ -30,13 +30,26 @@ function authError(error){if(error.code==="auth/invalid-credential"||error.code=
 async function refresh(){try{const data=await getAdminCatalog();categories=data.categories;products=data.products;renderLists();message(dashboardFeedback,"");}catch(error){message(dashboardFeedback,"Falha ao carregar dados. Confira as regras do Firestore e a conexão: "+error.message);}}
 function renderLists(){
   $("category-list").innerHTML=categories.map(c=>`<div class="record"><div><strong>${safe(c.name)}</strong><small>${c.published?"Publicada":"Oculta"} · ordem ${Number(c.order)||0}</small></div><div class="record-actions"><button data-edit-category="${c.id}">Editar</button><button class="delete" data-delete-category="${c.id}">Excluir</button></div></div>`).join("")||"<p class='status'>Nenhuma categoria cadastrada.</p>";
-  $("product-list").innerHTML=products.map(p=>`<div class="record"><div><strong>${safe(p.name)}</strong><small>${safe(p.category)} · ${p.published?"Publicado":"Oculto"}${p.featured?" · Destaque":""}</small></div><div class="record-actions"><button data-edit-product="${p.id}">Editar</button><button class="delete" data-delete-product="${p.id}">Excluir</button></div></div>`).join("")||"<p class='status'>Nenhum produto cadastrado.</p>";
   $("product-category").innerHTML='<option value="">Selecione</option>'+categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join("");
+  const listFilter=$("product-list-category");
+  const selectedFilter=listFilter.value;
+  listFilter.innerHTML='<option value="">Todas as categorias</option>'+categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join("");
+  if(categories.some(c=>c.name===selectedFilter))listFilter.value=selectedFilter;
+  renderProductList();
   document.querySelectorAll("[data-edit-category]").forEach(b=>b.onclick=()=>editCategory(b.dataset.editCategory));
   document.querySelectorAll("[data-delete-category]").forEach(b=>b.onclick=()=>removeCategory(b.dataset.deleteCategory));
   document.querySelectorAll("[data-edit-product]").forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
   document.querySelectorAll("[data-delete-product]").forEach(b=>b.onclick=()=>removeProduct(b.dataset.deleteProduct));
 }
+function renderProductList(){
+  const selected=$("product-list-category").value;
+  const filtered=selected?products.filter(p=>String(p.category||"")===selected):products;
+  $("product-list-count").textContent=`${filtered.length} ${filtered.length===1?"produto":"produtos"}`;
+  $("product-list").innerHTML=filtered.map(p=>`<div class="record"><div><strong>${safe(p.name)}</strong><small>${safe(p.category)} · ${p.published?"Publicado":"Oculto"}${p.featured?" · Destaque":""}</small></div><div class="record-actions"><button data-edit-product="${p.id}">Editar</button><button class="delete" data-delete-product="${p.id}">Excluir</button></div></div>`).join("")||"<p class='status'>Nenhum produto encontrado nesta categoria.</p>";
+  document.querySelectorAll("[data-edit-product]").forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
+  document.querySelectorAll("[data-delete-product]").forEach(b=>b.onclick=()=>removeProduct(b.dataset.deleteProduct));
+}
+$("product-list-category").addEventListener("change",renderProductList);
 function resetCategory(){$("category-form").reset();$("category-id").value="";$("category-order").value=categories.length;$("category-published").checked=true;}
 function resetProduct(){
   $("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;$("product-variants").value="";customFields=[];productPriceTiers=[];renderCustomFields();renderProductPriceTiers();toggleCustomFields();
@@ -131,17 +144,17 @@ async function removeProduct(id){const p=products.find(x=>x.id===id);if(!p||!awa
 $("category-cancel").addEventListener("click",resetCategory);$("product-cancel").addEventListener("click",resetProduct);
 resetCategory();resetProduct();
 
-// Textareas do painel: tamanho inicial confortável + crescimento automático.
-const ADMIN_TEXTAREA_MIN_HEIGHT = 120;
+// Textareas do painel: crescem conforme o conteúdo, sem perder o redimensionamento manual.
 function fitAdminTextarea(textarea){
  if(!textarea || textarea.hidden || textarea.type==="hidden")return;
- textarea.style.minHeight = `${ADMIN_TEXTAREA_MIN_HEIGHT}px`;
- textarea.style.height = "auto";
- textarea.style.height = `${Math.max(textarea.scrollHeight, ADMIN_TEXTAREA_MIN_HEIGHT)}px`;
+ textarea.style.height="auto";
+ textarea.style.height=`${Math.max(textarea.scrollHeight, textarea.dataset.minHeight ? Number(textarea.dataset.minHeight) : 0)}px`;
 }
 function setupAdminTextareas(){
- document.querySelectorAll("textarea:not([hidden])").forEach(textarea=>{
-  if(textarea.type==="hidden")return;
+ document.querySelectorAll("textarea").forEach(textarea=>{
+  if(textarea.type==="hidden" || textarea.hidden)return;
+  const computed=getComputedStyle(textarea);
+  textarea.dataset.minHeight=String(parseFloat(computed.minHeight)||0);
   fitAdminTextarea(textarea);
   textarea.addEventListener("input",()=>fitAdminTextarea(textarea));
  });

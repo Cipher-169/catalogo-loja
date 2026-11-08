@@ -37,18 +37,26 @@ label, .form-grid, .panel, .admin-panel, .product-form, .category-form{
   max-width:100%;
 }
 
+/* Filtro da lista de produtos por categoria */
+.product-list-toolbar{display:flex;align-items:end;justify-content:space-between;gap:14px;border-top:1px solid #eee7e5;margin-top:20px;padding-top:14px}
+.product-list-toolbar label{flex:1;max-width:360px;margin:0}
+.product-list-count{padding:0 2px 12px;color:#81777a;font-size:12px;white-space:nowrap}
+@media(max-width:560px){.product-list-toolbar{align-items:stretch;flex-direction:column;gap:4px}.product-list-toolbar label{max-width:none}.product-list-count{padding:0}}
 
-/* Altura inicial garantida para os campos de texto do painel. */
-.admin-content textarea,
-textarea:not([hidden]){
-  min-height:120px !important;
-  height:120px;
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  box-sizing:border-box;
-  display:block;
-  resize:vertical;
-  overflow-y:hidden;
-  overflow-wrap:anywhere;
+
+/* Limita a logo no cabeçalho do painel administrativo. */
+.admin-header .admin-brand {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 190px;
+  overflow: hidden;
+}
+.admin-header .admin-brand-logo {
+  display: block;
+  width: 170px;
+  max-width: 100%;
+  height: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  object-position: left center;
 }

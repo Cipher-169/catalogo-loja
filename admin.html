@@ -5,10 +5,7 @@
   <meta name="theme-color" content="#b51f32"><title>Painel administrativo | Fotomania</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" href="favicon.ico?v=20261110" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=20261110">
-  <link rel="apple-touch-icon" href="favicon-64.png?v=20261110">
-  <link rel="stylesheet" href="admin.css?v=brand-admin-header-1"><script type="module" src="admin.js?v=textarea-auto-grow-1"></script>
+  <link rel="stylesheet" href="admin.css?v=admin-logo-size-2"><script type="module" src="admin.js?v=textarea-auto-grow-1"></script>
 </head>
 <body>
   <header class="admin-header"><a class="brand admin-brand" href="./" aria-label="Fotomania — catálogo"><img class="admin-brand-logo" src="logo-fotomania.png?v=20261109" alt="Foto Mania"></a><span>Painel administrativo</span><a href="./">Ver catálogo ↗</a></header>
@@ -43,6 +40,14 @@
             <input id="product-image" type="url" placeholder="https://...">
             <input id="product-image-file-id" type="hidden">
           </div><label>Texto da etiqueta<input id="product-tag" maxlength="35" placeholder="Ex.: MAIS PEDIDO"></label><div id="custom-fields-editor" class="custom-fields-editor" hidden><div class="custom-fields-heading"><div><strong>Campos de personalização</strong><p>Monte as perguntas que o cliente responderá ao escolher este produto.</p></div><button class="secondary" id="add-custom-field" type="button">+ Adicionar campo</button></div><div id="custom-fields-list"></div></div><textarea id="product-variants" hidden aria-hidden="true"></textarea><div class="form-row"><label>Ordem<input id="product-order" type="number" min="0" value="0"></label><label class="check-label"><input id="product-featured" type="checkbox"> Em destaque</label><label class="check-label"><input id="product-published" type="checkbox" checked> Publicado</label></div><div class="form-actions"><button class="primary" type="submit">Salvar produto</button><button class="secondary" id="product-cancel" type="button">Limpar</button></div></form>
+          <div class="product-list-toolbar">
+            <label for="product-list-category">Exibir produtos da categoria
+              <select id="product-list-category">
+                <option value="">Todas as categorias</option>
+              </select>
+            </label>
+            <span id="product-list-count" class="product-list-count" aria-live="polite"></span>
+          </div>
           <div id="product-list" class="record-list"></div>
         </section>
       </div>
