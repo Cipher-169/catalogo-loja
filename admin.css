@@ -22,6 +22,7 @@
 
 /* Textareas responsivos: autoajuste de altura e redimensionamento manual vertical. */
 textarea{
+  min-height:110px;
   display:block;
   width:100%;
   max-width:100%;
@@ -35,8 +36,3 @@ label, .form-grid, .panel, .admin-panel, .product-form, .category-form{
   min-width:0;
   max-width:100%;
 }
-
-/* Identidade visual Fotomania no cabeçalho administrativo */
-.admin-header .admin-brand{display:flex;align-items:center;min-width:150px}
-.admin-header .admin-brand-logo{display:block;width:145px;height:auto;max-height:52px;object-fit:contain;object-position:left center}
-@media(max-width:640px){.admin-header .admin-brand-logo{width:118px;max-height:44px}}
