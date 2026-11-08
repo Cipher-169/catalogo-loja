@@ -3,9 +3,13 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged,
 import { getAdminCatalog, createCategory, updateCategory, deleteCategory, createProduct, updateProduct, deleteProduct } from "./catalog-service.js";
 
 const ADMIN_UIDS = ["nTFrJYgehtOYSPz6z8yMdOftQRn2", "MkBiNVj74keXFeJCFWDUwRJVxD22", "ofBu9ybOYION977yuvNTSXyFaw13"];
+// Preencha após publicar o Worker no Cloudflare. Não coloque segredos aqui.
+const IMAGE_UPLOAD_ENDPOINT = "";
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const $ = id => document.getElementById(id);
 const loginView=$("login-view"), dashboardView=$("dashboard-view"), loginFeedback=$("login-feedback"), dashboardFeedback=$("dashboard-feedback");
-let categories=[], products=[];
+let categories=[], products=[], localImagePreviewUrl="";
 const message=(el,text)=>{el.textContent=text||"";};
 const safe=(value)=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -30,11 +34,62 @@ function renderLists(){
   document.querySelectorAll("[data-delete-product]").forEach(b=>b.onclick=()=>removeProduct(b.dataset.deleteProduct));
 }
 function resetCategory(){$("category-form").reset();$("category-id").value="";$("category-order").value=categories.length;$("category-published").checked=true;}
-function resetProduct(){$("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;$("product-variants").value="";}
+function resetProduct(){
+  $("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;$("product-variants").value="";
+  $("product-image-file-id").value="";$("product-image-file").value="";setImagePreview("");message($("product-image-status"),"");
+}
 function editCategory(id){const c=categories.find(x=>x.id===id);if(!c)return;$("category-id").value=id;$("category-name").value=c.name||"";$("category-description").value=c.description||"";$("category-order").value=c.order??0;$("category-published").checked=c.published===true;$("category-name").focus();}
-function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$("product-id").value=id;$("product-name").value=p.name||"";$("product-category").value=p.category||"";$("product-description").value=p.description||"";$("product-details").value=p.details||"";$("product-price").value=p.price??"";$("product-type").value=p.type||"simple";$("product-image").value=p.image||"";$("product-tag").value=p.tag||"";$("product-variants").value=p.variants?.length?JSON.stringify(p.variants,null,2):"";$("product-order").value=p.order??0;$("product-featured").checked=p.featured===true;$("product-published").checked=p.published===true;$("product-name").focus();}
+function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$("product-id").value=id;$("product-name").value=p.name||"";$("product-category").value=p.category||"";$("product-description").value=p.description||"";$("product-details").value=p.details||"";$("product-price").value=p.price??"";$("product-type").value=p.type||"simple";$("product-image").value=p.image||"";$("product-image-file-id").value=p.imageFileId||"";setImagePreview(p.image||"");$("product-image-file").value="";message($("product-image-status"),"");$("product-tag").value=p.tag||"";$("product-variants").value=p.variants?.length?JSON.stringify(p.variants,null,2):"";$("product-order").value=p.order??0;$("product-featured").checked=p.featured===true;$("product-published").checked=p.published===true;$("product-name").focus();}
+
+function setImagePreview(url){
+  if(localImagePreviewUrl && url!==localImagePreviewUrl){URL.revokeObjectURL(localImagePreviewUrl);localImagePreviewUrl="";}
+  const wrap=$("product-image-preview-wrap"),preview=$("product-image-preview");
+  if(!url){preview.removeAttribute("src");wrap.hidden=true;return;}
+  preview.src=url;wrap.hidden=false;
+}
+
+$("product-image-file").addEventListener("change",e=>{
+  const file=e.target.files?.[0];
+  if(!file)return;
+  if(!ALLOWED_IMAGE_TYPES.includes(file.type)){e.target.value="";message($("product-image-status"),"Formato não permitido. Use JPG, PNG, WEBP ou GIF.");return;}
+  if(file.size>MAX_IMAGE_SIZE){e.target.value="";message($("product-image-status"),"A imagem ultrapassa o limite de 10 MB.");return;}
+  if(localImagePreviewUrl)URL.revokeObjectURL(localImagePreviewUrl);
+  localImagePreviewUrl=URL.createObjectURL(file);setImagePreview(localImagePreviewUrl);
+  message($("product-image-status"),"Pré-visualização local. Clique em Enviar imagem para armazená-la no ImageKit.");
+});
+$("product-image").addEventListener("input",e=>setImagePreview(e.target.value.trim()));
+$("product-image-preview").addEventListener("error",()=>{
+  $("product-image-preview-wrap").hidden=true;
+  message($("product-image-status"),"Não foi possível carregar a pré-visualização desta imagem.");
+});
+$("remove-product-image").addEventListener("click",()=>{
+  $("product-image").value="";$("product-image-file-id").value="";$("product-image-file").value="";
+  setImagePreview("");message($("product-image-status"),"Imagem removida do formulário. Salve o produto para confirmar.");
+});
+$("upload-product-image").addEventListener("click",async()=>{
+  const file=$("product-image-file").files?.[0];
+  if(!file){message($("product-image-status"),"Selecione uma imagem antes de enviar.");return;}
+  if(!ALLOWED_IMAGE_TYPES.includes(file.type)){message($("product-image-status"),"Formato não permitido. Use JPG, PNG, WEBP ou GIF.");return;}
+  if(file.size>MAX_IMAGE_SIZE){message($("product-image-status"),"A imagem ultrapassa o limite de 10 MB.");return;}
+  if(!IMAGE_UPLOAD_ENDPOINT){message($("product-image-status"),"O serviço de upload ainda precisa ser publicado no Cloudflare e configurado no admin.js.");return;}
+  const button=$("upload-product-image");button.disabled=true;message($("product-image-status"),"Enviando imagem...");
+  try{
+    const user=auth.currentUser;
+    if(!user)throw new Error("Sua sessão expirou. Entre novamente no painel.");
+    const token=await user.getIdToken();
+    const body=new FormData();body.append("file",file);body.append("fileName",file.name);
+    const response=await fetch(IMAGE_UPLOAD_ENDPOINT,{method:"POST",headers:{Authorization:`Bearer ${token}`},body});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||`Falha no envio (HTTP ${response.status}).`);
+    if(!result.url)throw new Error("O serviço não retornou a URL da imagem.");
+    $("product-image").value=result.url;$("product-image-file-id").value=result.fileId||"";
+    setImagePreview(result.url);message($("product-image-status"),"Imagem enviada. Salve o produto para publicar a alteração.");
+  }catch(error){message($("product-image-status"),error.message||"Não foi possível enviar a imagem.");}
+  finally{button.disabled=false;}
+});
+
 $("category-form").addEventListener("submit",async e=>{e.preventDefault();const id=$("category-id").value;const data={name:$("category-name").value.trim(),description:$("category-description").value.trim(),order:Number($("category-order").value)||0,published:$("category-published").checked};try{if(id)await updateCategory(id,data);else await createCategory(data);resetCategory();await refresh();message(dashboardFeedback,"Categoria salva.");}catch(error){message(dashboardFeedback,"Não foi possível salvar a categoria: "+error.message);}});
-$("product-form").addEventListener("submit",async e=>{e.preventDefault();const id=$("product-id").value;let variants=[];try{variants=$("product-variants").value.trim()?JSON.parse($("product-variants").value):[];if(!Array.isArray(variants))throw new Error("As variantes precisam estar em uma lista JSON.");}catch(error){message(dashboardFeedback,"JSON de variantes inválido: "+error.message);return;}const rawPrice=$("product-price").value;const data={name:$("product-name").value.trim(),category:$("product-category").value,description:$("product-description").value.trim(),details:$("product-details").value.trim(),price:rawPrice===""?null:Number(rawPrice),type:$("product-type").value,image:$("product-image").value.trim(),tag:$("product-tag").value.trim()||"FOTOMANIA",variants,order:Number($("product-order").value)||0,featured:$("product-featured").checked,published:$("product-published").checked};try{if(id)await updateProduct(id,data);else await createProduct(data);resetProduct();await refresh();message(dashboardFeedback,"Produto salvo.");}catch(error){message(dashboardFeedback,"Não foi possível salvar o produto: "+error.message);}});
+$("product-form").addEventListener("submit",async e=>{e.preventDefault();const id=$("product-id").value;let variants=[];try{variants=$("product-variants").value.trim()?JSON.parse($("product-variants").value):[];if(!Array.isArray(variants))throw new Error("As variantes precisam estar em uma lista JSON.");}catch(error){message(dashboardFeedback,"JSON de variantes inválido: "+error.message);return;}const rawPrice=$("product-price").value;const data={name:$("product-name").value.trim(),category:$("product-category").value,description:$("product-description").value.trim(),details:$("product-details").value.trim(),price:rawPrice===""?null:Number(rawPrice),type:$("product-type").value,image:$("product-image").value.trim(),imageFileId:$("product-image-file-id").value.trim()||null,tag:$("product-tag").value.trim()||"FOTOMANIA",variants,order:Number($("product-order").value)||0,featured:$("product-featured").checked,published:$("product-published").checked};try{if(id)await updateProduct(id,data);else await createProduct(data);resetProduct();await refresh();message(dashboardFeedback,"Produto salvo.");}catch(error){message(dashboardFeedback,"Não foi possível salvar o produto: "+error.message);}});
 async function removeCategory(id){const c=categories.find(x=>x.id===id);if(!c||!confirm(`Excluir a categoria “${c.name}”? Produtos vinculados não serão excluídos automaticamente.`))return;try{await deleteCategory(id);await refresh();message(dashboardFeedback,"Categoria excluída.");}catch(error){message(dashboardFeedback,error.message);}}
 async function removeProduct(id){const p=products.find(x=>x.id===id);if(!p||!confirm(`Excluir o produto “${p.name}”?`))return;try{await deleteProduct(id);await refresh();message(dashboardFeedback,"Produto excluído.");}catch(error){message(dashboardFeedback,error.message);}}
 $("category-cancel").addEventListener("click",resetCategory);$("product-cancel").addEventListener("click",resetProduct);
