@@ -8,7 +8,7 @@
   <link rel="apple-touch-icon" href="favicon-64.png?v=20261108">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=admin-logo-size-2"><script type="module" src="admin.js?v=textarea-auto-grow-1"></script>
+  <link rel="stylesheet" href="admin.css?v=image-library-stage-1"><script type="module" src="admin.js?v=image-library-stage-1"></script>
 </head>
 <body>
   <header class="admin-header"><a class="brand admin-brand" href="./" aria-label="Fotomania — catálogo"><img class="admin-brand-logo" src="logo-fotomania.png?v=20261109" alt="Foto Mania"></a><span>Painel administrativo</span><a href="./">Ver catálogo ↗</a></header>
@@ -54,6 +54,16 @@
           <div id="product-list" class="record-list"></div>
         </section>
       </div>
+      <section class="panel image-library-panel" id="image-library-panel" hidden>
+        <div class="panel-heading"><div><h2>Gerenciador de imagens</h2><p>Biblioteca do ImageKit · somente leitura nesta etapa.</p></div><button class="secondary" id="image-library-refresh" type="button">Atualizar</button></div>
+        <div class="image-library-toolbar">
+          <label for="image-library-search">Pesquisar nesta página<input id="image-library-search" type="search" placeholder="Nome do arquivo..."></label>
+          <label for="image-library-usage">Vínculo com produtos<select id="image-library-usage"><option value="all">Todas as imagens</option><option value="used">Em uso</option><option value="unused">Sem vínculo</option></select></label>
+        </div>
+        <p class="image-library-status" id="image-library-status" role="status">A biblioteca ainda não foi carregada.</p>
+        <div class="image-library-grid" id="image-library-grid"></div>
+        <div class="image-library-pagination"><button class="secondary" id="image-library-prev" type="button" disabled>Anterior</button><span id="image-library-page">Página 1</span><button class="secondary" id="image-library-next" type="button" disabled>Próxima</button></div>
+      </section>
     </section>
   </main>
   <section class="admin-dialog-backdrop" id="admin-dialog" hidden>

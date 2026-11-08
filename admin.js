@@ -3,6 +3,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged,
 import { getAdminCatalog, createCategory, updateCategory, deleteCategory, createProduct, updateProduct, deleteProduct, isImageFileInUse } from "./catalog-service.js";
 
 const ADMIN_UIDS = ["nTFrJYgehtOYSPz6z8yMdOftQRn2", "MkBiNVj74keXFeJCFWDUwRJVxD22", "ofBu9ybOYION977yuvNTSXyFaw13"];
+const IMAGE_MANAGER_UID = "nTFrJYgehtOYSPz6z8yMdOftQRn2";
 // Preencha após publicar o Worker no Cloudflare. Não coloque segredos aqui.
 const IMAGE_UPLOAD_ENDPOINT = "https://fotomania-image-upload.world-testaocenter790.workers.dev";
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -24,8 +25,86 @@ onAuthStateChanged(auth,async user=>{
   if(!user){loginView.hidden=false;dashboardView.hidden=true;return;}
   if(!ADMIN_UIDS.includes(user.uid)){message(loginFeedback,"Esta conta não está autorizada a administrar a Fotomania.");await signOut(auth);return;}
   loginView.hidden=true;dashboardView.hidden=false;$("admin-email").textContent=user.email||"Administrador autenticado";
+  $("image-library-panel").hidden = user.uid !== IMAGE_MANAGER_UID;
   await refresh();
+  if(user.uid===IMAGE_MANAGER_UID)await loadImageLibrary({reset:true});
 });
+
+// Biblioteca do ImageKit: acesso efetivo também validado pelo Cloudflare Worker.
+let imageLibraryFiles = [];
+let imageLibrarySkip = 0;
+const IMAGE_LIBRARY_LIMIT = 100;
+let imageLibraryHasNext = false;
+
+function formatImageSize(bytes){
+  const value=Number(bytes)||0;
+  if(value<1024)return `${value} B`;
+  if(value<1024*1024)return `${(value/1024).toFixed(1)} KB`;
+  return `${(value/(1024*1024)).toFixed(1)} MB`;
+}
+function formatImageDate(value){
+  if(!value)return "Data não informada";
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?"Data não informada":date.toLocaleDateString("pt-BR");
+}
+function renderImageLibrary(){
+  const search=$("image-library-search").value.trim().toLocaleLowerCase("pt-BR");
+  const usage=$("image-library-usage").value;
+  const linkedIds=new Set(products.map(product=>product.imageFileId).filter(Boolean));
+  const filtered=imageLibraryFiles.filter(file=>{
+    const used=linkedIds.has(file.fileId);
+    const matchesUsage=usage==="all"||(usage==="used"&&used)||(usage==="unused"&&!used);
+    return matchesUsage&&String(file.name||"").toLocaleLowerCase("pt-BR").includes(search);
+  });
+  $("image-library-grid").innerHTML=filtered.map(file=>{
+    const used=linkedIds.has(file.fileId);
+    const imageUrl=file.thumbnail||file.url;
+    return `<article class="image-library-card">
+      <a class="image-library-preview" href="${safe(file.url||imageUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir imagem ${safe(file.name)}">
+        <img src="${safe(imageUrl)}" alt="${safe(file.name)}" loading="lazy">
+      </a>
+      <div class="image-library-card-info"><strong title="${safe(file.name)}">${safe(file.name||"Arquivo sem nome")}</strong>
+      <small>${formatImageSize(file.size)} · ${formatImageDate(file.createdAt)}</small>
+      <span class="image-library-link-state ${used?"is-used":"is-unused"}">${used?"Vinculada a produto":"Sem vínculo com produto"}</span>
+      <small class="image-library-file-id">ID: ${safe(file.fileId||"não informado")}</small></div>
+    </article>`;
+  }).join("")||'<p class="image-library-empty">Nenhuma imagem corresponde aos filtros desta página.</p>';
+  $("image-library-page").textContent=`Página ${Math.floor(imageLibrarySkip/IMAGE_LIBRARY_LIMIT)+1}`;
+  $("image-library-prev").disabled=imageLibrarySkip===0;
+  $("image-library-next").disabled=!imageLibraryHasNext;
+}
+async function loadImageLibrary({reset=false}={}){
+  if(auth.currentUser?.uid!==IMAGE_MANAGER_UID)return;
+  if(reset)imageLibrarySkip=0;
+  const status=$("image-library-status");
+  $("image-library-refresh").disabled=true;
+  $("image-library-prev").disabled=true;
+  $("image-library-next").disabled=true;
+  message(status,"Carregando arquivos do ImageKit...");
+  try{
+    const token=await auth.currentUser.getIdToken();
+    const response=await fetch(IMAGE_UPLOAD_ENDPOINT,{
+      method:"POST",
+      headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
+      body:JSON.stringify({action:"list",path:"/fotomania/produtos",limit:IMAGE_LIBRARY_LIMIT,skip:imageLibrarySkip})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||`Falha ao consultar a biblioteca (HTTP ${response.status}).`);
+    imageLibraryFiles=Array.isArray(result.files)?result.files:[];
+    imageLibraryHasNext=imageLibraryFiles.length===IMAGE_LIBRARY_LIMIT;
+    renderImageLibrary();
+    message(status,`${imageLibraryFiles.length} arquivo(s) carregado(s) nesta página. A pesquisa e o filtro consideram a página atual.`);
+  }catch(error){
+    imageLibraryFiles=[];renderImageLibrary();
+    message(status,error.message||"Não foi possível carregar a biblioteca.");
+  }finally{$("image-library-refresh").disabled=false;}
+}
+$("image-library-refresh").addEventListener("click",()=>loadImageLibrary({reset:true}));
+$("image-library-search").addEventListener("input",renderImageLibrary);
+$("image-library-usage").addEventListener("change",renderImageLibrary);
+$("image-library-prev").addEventListener("click",()=>{if(imageLibrarySkip>=IMAGE_LIBRARY_LIMIT){imageLibrarySkip-=IMAGE_LIBRARY_LIMIT;loadImageLibrary();}});
+$("image-library-next").addEventListener("click",()=>{if(imageLibraryHasNext){imageLibrarySkip+=IMAGE_LIBRARY_LIMIT;loadImageLibrary();}});
+
 function authError(error){if(error.code==="auth/invalid-credential"||error.code==="auth/wrong-password")return"E-mail ou senha incorretos.";if(error.code==="auth/too-many-requests")return"Muitas tentativas. Aguarde um pouco e tente novamente.";return error.message||"Não foi possível concluir a operação.";}
 async function refresh(){try{const data=await getAdminCatalog();categories=data.categories;products=data.products;renderLists();message(dashboardFeedback,"");}catch(error){message(dashboardFeedback,"Falha ao carregar dados. Confira as regras do Firestore e a conexão: "+error.message);}}
 function renderLists(){
