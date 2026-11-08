@@ -10,3 +10,5 @@
 .custom-field-top{margin-bottom:2px}.custom-option-row{display:grid;grid-template-columns:minmax(0,1fr) 130px 28px;gap:8px;margin-top:8px;align-items:center}.custom-option-row input{min-width:0}
 .custom-options{margin-top:2px}.custom-options>strong{font-size:.9rem}
 @media(max-width:560px){.custom-fields-heading{align-items:flex-start;flex-direction:column}.custom-option-row{grid-template-columns:minmax(0,1fr) 92px 24px;gap:5px}}
+
+.custom-option-card{border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;margin:10px 0}.tier-editor{margin-top:8px;padding-top:8px;border-top:1px solid var(--line,#ddd)}.tier-editor summary{cursor:pointer;font-size:.9rem;font-weight:600}.tier-rows{display:grid;gap:8px;margin:10px 0}.tier-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}.tier-row label{font-size:.8rem}.tier-row input{width:100%;min-width:0}@media(max-width:560px){.tier-row{grid-template-columns:1fr 1fr auto}}

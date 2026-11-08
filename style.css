@@ -251,3 +251,8 @@ body.overlay-open{overflow:hidden}
 .cart-quantity-control button{width:27px;height:27px;border:1px solid var(--line);border-radius:6px;background:var(--soft);color:var(--ink);font-size:17px;line-height:1;cursor:pointer}
 .cart-quantity-control button:disabled{opacity:.4;cursor:not-allowed}
 .cart-quantity-control output{min-width:16px;text-align:center;font-size:13px;font-weight:800;color:var(--ink)}
+
+/* Botão para limpar todos os itens da sacola */
+.cart-clear-button{display:block;width:100%;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--red);padding:10px 14px;font:700 13px var(--font);cursor:pointer;margin:0 0 12px;transition:background .2s,border-color .2s,color .2s}.cart-clear-button:hover:not(:disabled){background:var(--red-soft);border-color:var(--red)}.cart-clear-button:disabled{opacity:.45;cursor:not-allowed}.cart-clear-button:focus-visible{outline:3px solid #e9a0aa;outline-offset:3px}
+
+.cart-item-subtotal{display:block;margin-top:4px;color:var(--muted,#777);font-size:.82rem}
