@@ -4,7 +4,7 @@ import { getAdminCatalog, createCategory, updateCategory, deleteCategory, create
 
 const ADMIN_UIDS = ["nTFrJYgehtOYSPz6z8yMdOftQRn2", "MkBiNVj74keXFeJCFWDUwRJVxD22", "ofBu9ybOYION977yuvNTSXyFaw13"];
 // Preencha após publicar o Worker no Cloudflare. Não coloque segredos aqui.
-const IMAGE_UPLOAD_ENDPOINT = "";
+const IMAGE_UPLOAD_ENDPOINT = "https://fotomania-image-upload.world-testaocenter790.workers.dev";
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const $ = id => document.getElementById(id);
