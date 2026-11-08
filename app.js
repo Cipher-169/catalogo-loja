@@ -29,8 +29,20 @@ function productCard(product){const startingPrice=getTierPrice(product,1);return
 function attachImageFallbacks(root=document){root.querySelectorAll("img").forEach(img=>{if(img.dataset.fallbackReady)return;img.dataset.fallbackReady="true";const useFallback=()=>{if(img.closest(".cart-item")){const placeholder=document.createElement("div");placeholder.className="cart-item-image-placeholder";placeholder.setAttribute("aria-label","Imagem do produto indisponível");placeholder.textContent="Fotomania";img.replaceWith(placeholder);return;}if(img.classList.contains("modal-image")){const placeholder=document.createElement("div");placeholder.className="modal-image-placeholder";placeholder.setAttribute("aria-label","Imagem do produto indisponível");placeholder.textContent="Fotomania";img.replaceWith(placeholder);return;}img.classList.add("image-load-failed");if(img.parentElement)img.parentElement.classList.add("image-fallback");img.alt="";};if(!img.getAttribute("src")||!img.getAttribute("src").trim()||img.getAttribute("src").trim()==="undefined"||img.getAttribute("src").trim()==="null"){useFallback();return;}img.addEventListener("error",useFallback,{once:true});});}
 // Delegação global: mantém o botão funcional mesmo quando os cards são recriados dinamicamente.
 document.addEventListener("click",event=>{const button=event.target.closest("[data-product]");if(!button)return;event.preventDefault();openProductModal(button.dataset.product);});
-// Delegação no contêiner persistente: o botão de adicionar continua funcional mesmo após recriar o conteúdo do modal.
-modalContent.addEventListener("click",event=>{const button=event.target.closest("#modal-add");if(!button)return;event.preventDefault();const productId=modalContent.dataset.productId;const product=products.find(item=>String(item.id)===String(productId));if(product)addConfiguredProduct(product);});
+// O botão é criado dinamicamente junto com o conteúdo do modal; associe o evento
+// diretamente após sua criação para evitar falhas de delegação em elementos recriados.
+function bindModalAddButton(product){
+ const addButton=modalContent.querySelector("#modal-add");
+ if(!addButton)return;
+ addButton.addEventListener("click",event=>{
+  event.preventDefault();
+  event.stopPropagation();
+  addButton.disabled=true;
+  try{addConfiguredProduct(product);}
+  catch(error){console.error("Erro ao adicionar produto à sacola:",error);showNotice("Não foi possível adicionar este produto. Feche as opções e tente novamente.","Erro na sacola");}
+  finally{if(addButton.isConnected)addButton.disabled=false;}
+ });
+}
 function renderFeaturedProducts(){
   const featured=products.filter(product=>product.featured).slice(0,4);
   featuredGrid.innerHTML=featured.map(productCard).join("");
@@ -80,6 +92,7 @@ function openProductModal(id){
  modalContent.dataset.productId=String(p.id);
  modalContent.innerHTML=`<div class="modal-layout">${p.image?`<img class="modal-image" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`:`<div class="modal-image-placeholder" aria-label="Imagem do produto indisponível">Fotomania</div>`}<div class="modal-copy"><span class="eyebrow"><i></i> ${escapeHtml(String(p.category||"Produto").toUpperCase())}</span><h2 id="modal-title">${escapeHtml(p.name)}</h2><p>${escapeHtml(p.details)}</p><div class="modal-price">${money(getTierPrice(p,getCartProductQuantity(p.id)+modalQuantity))}${getTierPrice(p,getCartProductQuantity(p.id)+modalQuantity)!=null?` cada · ${money(getTierPrice(p,getCartProductQuantity(p.id)+modalQuantity)*modalQuantity)} no total`:""}</div>${config}<div class="config-group"><label>Quantidade</label><div class="quantity-control"><button type="button" id="quantity-minus" aria-label="Diminuir quantidade">−</button><output id="modal-quantity">1</output><button type="button" id="quantity-plus" aria-label="Aumentar quantidade">+</button></div></div><button class="modal-add" id="modal-add" type="button">Adicionar à sacola</button></div></div>`;
  attachImageFallbacks(modalContent);
+ bindModalAddButton(p);
  modalContent.querySelectorAll("[data-custom-choice]").forEach(button=>button.addEventListener("click",()=>{const fieldIndex=button.dataset.customChoice;modalContent.querySelectorAll(`[data-custom-choice="${fieldIndex}"]`).forEach(item=>item.classList.remove("selected"));button.classList.add("selected");updateModalPrice(p,fields);}));
  modalContent.querySelectorAll("select[data-custom-field]").forEach(control=>control.addEventListener("change",()=>updateModalPrice(p,fields)));
  document.querySelector("#quantity-minus").addEventListener("click",()=>{modalQuantity=Math.max(1,modalQuantity-1);document.querySelector("#modal-quantity").textContent=modalQuantity;updateModalPrice(p,fields);});document.querySelector("#quantity-plus").addEventListener("click",()=>{modalQuantity=Math.min(99,modalQuantity+1);document.querySelector("#modal-quantity").textContent=modalQuantity;updateModalPrice(p,fields);});showOverlay("modal");document.querySelector("#modal-close").focus();
