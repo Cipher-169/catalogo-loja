@@ -1,48 +1,94 @@
 // Operações de leitura e escrita do catálogo.
 // A autorização real é aplicada pelas regras do Firestore, não apenas pelo frontend.
 import {
-  collection, getDocs, query, where, orderBy,
-  addDoc, updateDoc, deleteDoc, doc, serverTimestamp
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import { db } from "./firebase.js";
 
-export async function getPublicCatalog() {
+const categoriesCollection = collection(db, "categories");
+const productsCollection = collection(db, "products");
+
+function mapDocuments(snapshot) {
+  return snapshot.docs.map((document) => ({
+    id: document.id,
+    ...document.data(),
+  }));
+}
+
+async function getCatalog({ publishedOnly = false } = {}) {
+  const categoryConstraints = [orderBy("order", "asc")];
+  const productConstraints = [orderBy("order", "asc")];
+
+  if (publishedOnly) {
+    categoryConstraints.unshift(where("published", "==", true));
+    productConstraints.unshift(where("published", "==", true));
+  }
+
   const [categorySnapshot, productSnapshot] = await Promise.all([
-    getDocs(query(collection(db, "categories"), where("published", "==", true), orderBy("order", "asc"))),
-    getDocs(query(collection(db, "products"), where("published", "==", true), orderBy("order", "asc")))
+    getDocs(query(categoriesCollection, ...categoryConstraints)),
+    getDocs(query(productsCollection, ...productConstraints)),
   ]);
+
   return {
-    categories: categorySnapshot.docs.map(item => ({ id: item.id, ...item.data() })),
-    products: productSnapshot.docs.map(item => ({ id: item.id, ...item.data() }))
+    categories: mapDocuments(categorySnapshot),
+    products: mapDocuments(productSnapshot),
   };
 }
 
-export async function createCategory(data) {
-  return addDoc(collection(db, "categories"), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+function createTimestamps() {
+  return {
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
 }
-export async function updateCategory(id, data) {
-  return updateDoc(doc(db, "categories", id), { ...data, updatedAt: serverTimestamp() });
+
+function updateTimestamp() {
+  return { updatedAt: serverTimestamp() };
 }
-export async function deleteCategory(id) {
+
+export function getPublicCatalog() {
+  return getCatalog({ publishedOnly: true });
+}
+
+export function getAdminCatalog() {
+  return getCatalog();
+}
+
+export function createCategory(data) {
+  return addDoc(categoriesCollection, { ...data, ...createTimestamps() });
+}
+
+export function updateCategory(id, data) {
+  return updateDoc(doc(db, "categories", id), {
+    ...data,
+    ...updateTimestamp(),
+  });
+}
+
+export function deleteCategory(id) {
   return deleteDoc(doc(db, "categories", id));
 }
-export async function createProduct(data) {
-  return addDoc(collection(db, "products"), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-}
-export async function updateProduct(id, data) {
-  return updateDoc(doc(db, "products", id), { ...data, updatedAt: serverTimestamp() });
-}
-export async function deleteProduct(id) {
-  return deleteDoc(doc(db, "products", id));
+
+export function createProduct(data) {
+  return addDoc(productsCollection, { ...data, ...createTimestamps() });
 }
 
-export async function getAdminCatalog() {
-  const [categorySnapshot, productSnapshot] = await Promise.all([
-    getDocs(query(collection(db, "categories"), orderBy("order", "asc"))),
-    getDocs(query(collection(db, "products"), orderBy("order", "asc")))
-  ]);
-  return {
-    categories: categorySnapshot.docs.map(item => ({ id: item.id, ...item.data() })),
-    products: productSnapshot.docs.map(item => ({ id: item.id, ...item.data() }))
-  };
+export function updateProduct(id, data) {
+  return updateDoc(doc(db, "products", id), {
+    ...data,
+    ...updateTimestamp(),
+  });
+}
+
+export function deleteProduct(id) {
+  return deleteDoc(doc(db, "products", id));
 }
