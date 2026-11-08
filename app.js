@@ -111,7 +111,7 @@ function addConfiguredProduct(p){
  const basePrice=productTiers.length?getTierPrice(p,modalQuantity):selectedOptionPrice??p.price;
  const key=JSON.stringify([p.id,options]);const existing=cart.find(item=>item.key===key);
  if(existing){existing.quantity=Math.min(99,existing.quantity+modalQuantity);existing.productPriceTiers=productTiers;existing.price=basePrice;}
- else cart.push({key,productId:p.id,name:p.name,image:p.image,quantity:modalQuantity,options,price:basePrice,productPriceTiers});
+ else cart.push({key,productId:p.id,name:p.name,image:p.image,quantity:modalQuantity,options,price:basePrice,productPriceTiers:productTiers});
  persistCart();closeOverlays();openCart();
 }
 function persistCart(){try{localStorage.setItem("fotomania-cart",JSON.stringify(cart));}catch(_){}document.querySelector("#cart-count").textContent=cart.reduce((sum,item)=>sum+item.quantity,0);}
