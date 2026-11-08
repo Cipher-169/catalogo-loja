@@ -5,12 +5,13 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 import { db } from "./firebase.js";
 
@@ -25,22 +26,27 @@ function mapDocuments(snapshot) {
 }
 
 async function getCatalog({ publishedOnly = false } = {}) {
-  const categoryConstraints = [orderBy("order", "asc")];
-  const productConstraints = [orderBy("order", "asc")];
+  // A ordenação é feita no cliente para incluir documentos antigos sem o campo order
+  // e evitar dependência de índices compostos no Firestore.
+  const categoryRequest = publishedOnly
+    ? getDocs(query(categoriesCollection, where("published", "==", true)))
+    : getDocs(categoriesCollection);
+  const productRequest = publishedOnly
+    ? getDocs(query(productsCollection, where("published", "==", true)))
+    : getDocs(productsCollection);
+  const [categorySnapshot, productSnapshot] = await Promise.all([categoryRequest, productRequest]);
+  const sortByOrder = (a, b) => (Number(a.order) || 0) - (Number(b.order) || 0);
+  let categories = mapDocuments(categorySnapshot);
+  let products = mapDocuments(productSnapshot);
 
   if (publishedOnly) {
-    categoryConstraints.unshift(where("published", "==", true));
-    productConstraints.unshift(where("published", "==", true));
+    categories = categories.filter(item => item.published === true);
+    products = products.filter(item => item.published === true);
   }
 
-  const [categorySnapshot, productSnapshot] = await Promise.all([
-    getDocs(query(categoriesCollection, ...categoryConstraints)),
-    getDocs(query(productsCollection, ...productConstraints)),
-  ]);
-
   return {
-    categories: mapDocuments(categorySnapshot),
-    products: mapDocuments(productSnapshot),
+    categories: categories.sort(sortByOrder),
+    products: products.sort(sortByOrder),
   };
 }
 
@@ -67,15 +73,35 @@ export function createCategory(data) {
   return addDoc(categoriesCollection, { ...data, ...createTimestamps() });
 }
 
-export function updateCategory(id, data) {
-  return updateDoc(doc(db, "categories", id), {
-    ...data,
-    ...updateTimestamp(),
-  });
+export async function updateCategory(id, data) {
+  const categoryRef = doc(db, "categories", id);
+  const currentSnapshot = await getDoc(categoryRef);
+  if (!currentSnapshot.exists()) throw new Error("Esta categoria não existe mais.");
+  const previousName = currentSnapshot.data().name;
+  const batch = writeBatch(db);
+  batch.update(categoryRef, { ...data, ...updateTimestamp() });
+
+  // Ao renomear a categoria, mantém os produtos vinculados ao novo nome.
+  if (previousName && previousName !== data.name) {
+    const linkedProducts = await getDocs(query(productsCollection, where("category", "==", previousName)));
+    if (linkedProducts.size > 499) {
+      throw new Error("Há muitos produtos vinculados para renomear em uma única operação. Divida a atualização em etapas.");
+    }
+    linkedProducts.docs.forEach(product => batch.update(product.ref, { category: data.name, ...updateTimestamp() }));
+  }
+  return batch.commit();
 }
 
-export function deleteCategory(id) {
-  return deleteDoc(doc(db, "categories", id));
+export async function deleteCategory(id) {
+  const categoryRef = doc(db, "categories", id);
+  const categorySnapshot = await getDoc(categoryRef);
+  if (!categorySnapshot.exists()) throw new Error("Esta categoria não existe mais.");
+  const categoryName = categorySnapshot.data().name;
+  const linkedProducts = await getDocs(query(productsCollection, where("category", "==", categoryName)));
+  if (!linkedProducts.empty) {
+    throw new Error("Esta categoria possui produtos vinculados. Reatribua ou exclua esses produtos antes de excluir a categoria.");
+  }
+  return deleteDoc(categoryRef);
 }
 
 export function createProduct(data) {

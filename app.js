@@ -1,17 +1,9 @@
 import { getPublicCatalog } from "./catalog-service.js";
 
-// Fotomania — catálogo demonstrativo. Os dados serão substituídos pelo painel/Firestore na integração.
-let categories = ["Fotos", "Camisas", "Canecas", "Álbuns", "Chaveiros", "Presentes personalizados"];
-let products = [
-  {id:1,name:"Revelação de fotos",category:"Fotos",description:"Revele suas fotografias favoritas em tamanhos tradicionais ou sob medida.",details:"Escolha um dos tamanhos mais pedidos ou informe as dimensões que deseja. Para tamanhos personalizados, a equipe confirma a viabilidade e o valor pelo WhatsApp.",price:null,tag:"MAIS PEDIDO",featured:true,type:"photo",image:"https://images.unsplash.com/photo-1520857014576-2c4f4c972b57?auto=format&fit=crop&w=900&q=85"},
-  {id:2,name:"Caneca personalizada",category:"Canecas",description:"Uma caneca com foto, frase ou arte para acompanhar seus melhores momentos.",details:"Você pode enviar sua própria arte ou pedir que a Fotomania desenvolva uma proposta. A criação, aprovação e os detalhes finais são tratados pelo WhatsApp.",price:null,tag:"PERSONALIZE",featured:true,type:"mug",image:"https://images.unsplash.com/photo-1514228742587-6b1558f7c2c7?auto=format&fit=crop&w=900&q=85"},
-  {id:3,name:"Chaveiro de acrílico",category:"Chaveiros",description:"Um pedacinho da sua história para levar sempre com você.",details:"Um presente personalizado para guardar uma lembrança especial. Consulte modelos e disponibilidade.",price:null,tag:"PRESENTE CRIATIVO",featured:false,type:"simple",image:"https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=900&q=85"},
-  {id:4,name:"Camiseta personalizada",category:"Camisas",description:"Sua ideia, sua estampa. Uma peça com personalidade e significado.",details:"Escolha o tamanho desejado. Os valores podem variar conforme o tamanho e serão confirmados antes da finalização.",price:null,tag:"DO SEU JEITO",featured:true,type:"shirt",variants:[{value:"PP",label:"PP",price:null},{value:"P",label:"P",price:null},{value:"M",label:"M",price:null},{value:"G",label:"G",price:null},{value:"GG",label:"GG",price:null},{value:"XG",label:"XG",price:null}],image:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=85"},
-  {id:5,name:"Álbum de fotografias",category:"Álbuns",description:"Reúna momentos especiais em um álbum para revisitar sempre.",details:"Consulte opções de modelos, capacidade e acabamentos disponíveis.",price:null,tag:"MEMÓRIAS",featured:true,type:"simple",image:"https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=900&q=85"},
-  {id:6,name:"Presente com foto",category:"Presentes personalizados",description:"Um presente pensado nos detalhes para surpreender quem você ama.",details:"Conte um pouco sobre a ideia e a equipe ajuda a encontrar a melhor opção.",price:null,tag:"FEITO COM AFETO",featured:false,type:"simple",image:"https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=900&q=85"},
-  {id:7,name:"Foto em tamanho especial",category:"Fotos",description:"Escolha o tamanho e o acabamento que combinam com sua lembrança.",details:"Informe as dimensões desejadas. A equipe confirma o valor e os detalhes pelo WhatsApp.",price:null,tag:"SUA FOTO FAVORITA",featured:false,type:"photo",image:"https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=900&q=85"},
-  {id:8,name:"Caneca com frase",category:"Canecas",description:"Uma frase especial pode transformar um objeto simples em lembrança.",details:"Escolha se deseja enviar a arte pronta ou receber ajuda para desenvolvê-la.",price:null,tag:"IDEIA ESPECIAL",featured:false,type:"mug",image:"https://images.unsplash.com/photo-1493857671505-72967e2e2760?auto=format&fit=crop&w=900&q=85"}
-];
+// O Firestore é a fonte oficial do catálogo público.
+let categories = [];
+let products = [];
+let catalogLoaded = false;
 
 const homeView=document.querySelector("#home-view"),categoryView=document.querySelector("#category-view"),categoryGrid=document.querySelector("#category-grid"),featuredGrid=document.querySelector("#featured-grid"),productGrid=document.querySelector("#product-grid"),searchInput=document.querySelector("#search-input"),emptyState=document.querySelector("#empty-state"),productCount=document.querySelector("#product-count"),activeFilterLabel=document.querySelector("#active-filter-label"),clearFiltersButton=document.querySelector("#clear-filters");
 const modal=document.querySelector("#product-modal"),modalContent=document.querySelector("#modal-content"),drawer=document.querySelector("#cart-drawer"),backdrop=document.querySelector("#ui-backdrop");
@@ -22,14 +14,29 @@ const money=value=>value==null?"A confirmar":value.toLocaleString("pt-BR",{style
 function slugify(value){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
 function navigateToCategory(category){const url=new URL(location.href);url.searchParams.set("categoria",slugify(category));url.hash="";history.pushState({},"",url);renderRoute();scrollTo({top:0,behavior:"smooth"});}
 function navigateHome(){const url=new URL(location.href);url.searchParams.delete("categoria");url.hash="";history.pushState({},"",url);renderRoute();scrollTo({top:0,behavior:"smooth"});}
-function renderCategoryCards(){categoryGrid.innerHTML=categories.map(category=>{const count=products.filter(p=>p.category===category).length;return `<a class="category-text-card" href="?categoria=${encodeURIComponent(slugify(category))}" data-category-link="${category}"><span class="category-card-name">${category}</span><span class="category-card-meta">${count} ${count===1?"produto":"produtos"}</span><span class="category-card-arrow" aria-hidden="true">↗</span></a>`;}).join("");categoryGrid.querySelectorAll("[data-category-link]").forEach(link=>link.addEventListener("click",e=>{e.preventDefault();navigateToCategory(link.dataset.categoryLink);}));}
+function renderCategoryCards(){
+  if(!catalogLoaded){categoryGrid.innerHTML='<p class="catalog-status">Carregando categorias…</p>';return;}
+  if(!categories.length){categoryGrid.innerHTML='<p class="catalog-status">Nenhuma categoria disponível no momento.</p>';return;}
+  categoryGrid.innerHTML=categories.map(category=>{
+    const count=products.filter(product=>product.category===category.name).length;
+    return `<a class="category-text-card" href="?categoria=${encodeURIComponent(slugify(category.name))}" data-category-link="${category.id}"><span class="category-card-name">${category.name}</span><span class="category-card-meta">${count} ${count===1?"produto":"produtos"}</span><span class="category-card-arrow" aria-hidden="true">↗</span></a>`;
+  }).join("");
+  categoryGrid.querySelectorAll("[data-category-link]").forEach(link=>link.addEventListener("click",event=>{
+    event.preventDefault();const category=categories.find(item=>item.id===link.dataset.categoryLink);if(category)navigateToCategory(category.name);
+  }));
+}
 function productCard(product){return `<article class="product-card"><div class="product-image"><img src="${product.image}" alt="${product.name}" loading="lazy"><span class="product-tag">${product.tag}</span></div><div class="product-info"><span class="product-category">${product.category}</span><h3>${product.name}</h3><p>${product.description}</p><div class="product-bottom"><div class="product-price">${money(product.price)}<small>${product.price==null?"Consulte opções e valores":""}</small></div><button class="product-more" type="button" data-product="${product.id}">Ver opções <span aria-hidden="true">↗</span></button></div></div></article>`;}
 function attachImageFallbacks(root=document){root.querySelectorAll("img").forEach(img=>{if(img.dataset.fallbackReady)return;img.dataset.fallbackReady="true";const useFallback=()=>{if(img.classList.contains("modal-image")){const placeholder=document.createElement("div");placeholder.className="modal-image-placeholder";placeholder.setAttribute("aria-label","Imagem do produto indisponível");placeholder.textContent="Fotomania";img.replaceWith(placeholder);return;}img.classList.add("image-load-failed");if(img.parentElement)img.parentElement.classList.add("image-fallback");img.alt="";};if(!img.getAttribute("src")||!img.getAttribute("src").trim()){useFallback();return;}img.addEventListener("error",useFallback,{once:true});});}
 // Delegação global: mantém o botão funcional mesmo quando os cards são recriados dinamicamente.
 document.addEventListener("click",event=>{const button=event.target.closest("[data-product]");if(!button)return;event.preventDefault();openProductModal(button.dataset.product);});
-function renderFeaturedProducts(){featuredGrid.innerHTML=products.filter(p=>p.featured).slice(0,4).map(productCard).join("");attachImageFallbacks(featuredGrid);}
+function renderFeaturedProducts(){
+  const featured=products.filter(product=>product.featured).slice(0,4);
+  featuredGrid.innerHTML=featured.map(productCard).join("");
+  if(catalogLoaded&&!featured.length)featuredGrid.innerHTML='<p class="catalog-status">Nenhum produto em destaque no momento.</p>';
+  attachImageFallbacks(featuredGrid);
+}
 function renderCategoryProducts(){const filtered=products.filter(p=>{const text=`${p.name} ${p.category} ${p.description}`.toLocaleLowerCase("pt-BR");return p.category===activeCategory&&text.includes(searchTerm);});productGrid.innerHTML=filtered.map(productCard).join("");attachImageFallbacks(productGrid);productCount.textContent=`${filtered.length} ${filtered.length===1?"produto":"produtos"}`;activeFilterLabel.textContent=searchTerm?`Resultados em ${activeCategory}`:`Todos os produtos de ${activeCategory}`;clearFiltersButton.hidden=!searchTerm;emptyState.hidden=filtered.length!==0;productGrid.hidden=filtered.length===0;}
-function renderRoute(){const slug=new URL(location.href).searchParams.get("categoria"),category=categories.find(c=>slugify(c)===slug);activeCategory=category||null;searchTerm="";if(searchInput)searchInput.value="";const categoryPage=Boolean(activeCategory);homeView.hidden=categoryPage;categoryView.hidden=!categoryPage;document.body.classList.toggle("is-category-page",categoryPage);if(categoryPage){document.title=`${activeCategory} | Fotomania`;document.querySelector("#category-page-title").textContent=activeCategory;document.querySelector("#breadcrumb-category").textContent=activeCategory;document.querySelector("#category-description").textContent=`Confira os produtos disponíveis na categoria ${activeCategory}.`;renderCategoryProducts();}else document.title="Fotomania | Categorias e produtos";}
+function renderRoute(){const slug=new URL(location.href).searchParams.get("categoria"),category=categories.find(item=>slugify(item.name)===slug);activeCategory=category?.name||null;searchTerm="";if(searchInput)searchInput.value="";const categoryPage=Boolean(activeCategory);homeView.hidden=categoryPage;categoryView.hidden=!categoryPage;document.body.classList.toggle("is-category-page",categoryPage);if(categoryPage){document.title=`${activeCategory} | Fotomania`;document.querySelector("#category-page-title").textContent=activeCategory;document.querySelector("#breadcrumb-category").textContent=activeCategory;document.querySelector("#category-description").textContent=`Confira os produtos disponíveis na categoria ${activeCategory}.`;renderCategoryProducts();}else document.title="Fotomania | Categorias e produtos";}
 function showOverlay(which){backdrop.hidden=false;document.body.classList.add("overlay-open");modal.hidden=which!=="modal";drawer.hidden=which!=="cart";}
 function closeOverlays(){modal.hidden=true;drawer.hidden=true;backdrop.hidden=true;document.body.classList.remove("overlay-open");}
 function optionButtons(options,selected,name){return options.map(o=>`<button type="button" class="option-button ${o.value===selected?"selected":""}" data-option-group="${name}" data-option-value="${o.value}">${o.label}</button>`).join("");}
@@ -69,20 +76,24 @@ document.querySelector("#year").textContent=new Date().getFullYear();document.qu
 const themeToggle=document.querySelector("#theme-toggle"),themeIcon=themeToggle.querySelector(".theme-toggle-icon"),themeColor=document.querySelector('meta[name="theme-color"]');function applyTheme(theme){document.documentElement.dataset.theme=theme;const dark=theme==="dark";themeIcon.textContent=dark?"☀":"☾";themeToggle.setAttribute("aria-label",dark?"Ativar modo claro":"Ativar modo escuro");themeToggle.title=dark?"Ativar modo claro":"Ativar modo escuro";themeColor.setAttribute("content",dark?"#171416":"#b51f32");}let savedTheme=null;try{savedTheme=localStorage.getItem("fotomania-theme");}catch(_){}applyTheme(savedTheme==="dark"||savedTheme==="light"?savedTheme:(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));themeToggle.addEventListener("click",()=>{const next=document.documentElement.dataset.theme==="dark"?"light":"dark";applyTheme(next);try{localStorage.setItem("fotomania-theme",next);}catch(_){}});
 renderCategoryCards();renderFeaturedProducts();renderRoute();persistCart();
 
-// O catálogo publicado passa a vir do Firestore. Se a leitura falhar,
-// preservamos os dados demonstrativos para que a vitrine não fique inutilizável.
+// Carrega somente registros publicados; em caso de falha, não exibe dados fictícios.
 try {
   const remote = await getPublicCatalog();
-  categories = remote.categories.map(item => item.name).filter(Boolean);
-  products = remote.products.map(item => ({
-    id: item.id, name: item.name || "Produto", category: item.category || "Outros produtos",
-    description: item.description || "", details: item.details || item.description || "",
-    price: item.price ?? null, tag: item.tag || "FOTOMANIA", featured: item.featured === true,
-    type: item.type || "simple", variants: Array.isArray(item.variants) ? item.variants : [],
-    image: item.image || ""
-  }));
-  renderCategoryCards(); renderFeaturedProducts(); renderRoute();
-} catch (error) {
-  console.error("Não foi possível carregar o catálogo do Firestore:", error);
+  categories = remote.categories.filter(item=>item.published===true&&item.name).sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+  const validCategoryNames = new Set(categories.map(category=>category.name));
+  products = remote.products.filter(item=>item.published===true&&validCategoryNames.has(item.category)).map(item=>({
+    id:item.id,name:item.name||"Produto",category:item.category,description:item.description||"",
+    details:item.details||item.description||"",price:item.price??null,tag:item.tag||"FOTOMANIA",
+    featured:item.featured===true,type:item.type||"simple",variants:Array.isArray(item.variants)?item.variants:[],
+    image:item.image||"",order:Number(item.order)||0
+  })).sort((a,b)=>a.order-b.order);
+  catalogLoaded=true;
+  renderCategoryCards();renderFeaturedProducts();renderRoute();
+} catch(error) {
+  console.error("Não foi possível carregar o catálogo do Firestore:",error);
+  catalogLoaded=true;categories=[];products=[];
+  categoryGrid.innerHTML='<p class="catalog-status">Não foi possível carregar as categorias. Tente novamente mais tarde.</p>';
+  featuredGrid.innerHTML='<p class="catalog-status">Não foi possível carregar os produtos.</p>';
+  renderRoute();
 }
 
