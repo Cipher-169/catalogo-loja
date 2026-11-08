@@ -130,3 +130,21 @@ async function removeCategory(id){const c=categories.find(x=>x.id===id);if(!c||!
 async function removeProduct(id){const p=products.find(x=>x.id===id);if(!p||!await showAdminConfirm(`Excluir o produto “${p.name}”?`,"Excluir produto?"))return;try{await deleteProduct(id);await refresh();message(dashboardFeedback,"Produto excluído.");}catch(error){message(dashboardFeedback,error.message);}}
 $("category-cancel").addEventListener("click",resetCategory);$("product-cancel").addEventListener("click",resetProduct);
 resetCategory();resetProduct();
+
+// Textareas do painel: crescem conforme o conteúdo, sem perder o redimensionamento manual.
+function fitAdminTextarea(textarea){
+ if(!textarea || textarea.hidden || textarea.type==="hidden")return;
+ textarea.style.height="auto";
+ textarea.style.height=`${Math.max(textarea.scrollHeight, textarea.dataset.minHeight ? Number(textarea.dataset.minHeight) : 0)}px`;
+}
+function setupAdminTextareas(){
+ document.querySelectorAll("textarea").forEach(textarea=>{
+  if(textarea.type==="hidden" || textarea.hidden)return;
+  const computed=getComputedStyle(textarea);
+  textarea.dataset.minHeight=String(parseFloat(computed.minHeight)||0);
+  fitAdminTextarea(textarea);
+  textarea.addEventListener("input",()=>fitAdminTextarea(textarea));
+ });
+}
+setupAdminTextareas();
+

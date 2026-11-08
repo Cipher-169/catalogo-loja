@@ -270,3 +270,7 @@ body.overlay-open{overflow:hidden}
 .brand{display:inline-flex;align-items:center;flex-shrink:0;gap:0;width:190px}
 .brand-logo{display:block;width:100%;height:auto;max-height:58px;object-fit:contain;object-position:left center}
 @media(max-width:640px){.brand{width:145px}.brand-logo{max-height:48px}}
+
+/* Logo principal também no rodapé */
+.brand-logo-footer{display:block;width:140px;height:auto;max-height:54px;object-fit:contain;object-position:left center}
+@media(max-width:640px){.brand-logo-footer{width:122px;max-height:46px}}

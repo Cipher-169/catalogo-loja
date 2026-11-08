@@ -18,3 +18,25 @@
 
 /* Diálogos de confirmação no padrão visual Fotomania */
 .admin-dialog-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(22,16,19,.58);backdrop-filter:blur(5px)}.admin-dialog-backdrop[hidden]{display:none}.admin-dialog-card{width:min(100%,430px);padding:30px;border:1px solid var(--line,#eadfe1);border-radius:20px;background:var(--surface,#fff);color:var(--text,#292326);box-shadow:0 24px 80px rgba(0,0,0,.24);text-align:center;animation:admin-dialog-in .18s ease-out}.admin-dialog-icon{display:grid;place-items:center;width:48px;height:48px;margin:0 auto 14px;border-radius:15px;background:#fbecef;color:#b51f32;font-size:25px}.admin-dialog-card h2{margin:0 0 9px;font:800 22px Manrope, sans-serif}.admin-dialog-card p{margin:0;color:var(--muted,#756b70);font-size:14px;line-height:1.6;overflow-wrap:anywhere}.admin-dialog-actions{display:flex;justify-content:center;gap:10px;margin-top:24px}.admin-dialog-actions button{min-width:112px}@keyframes admin-dialog-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+
+/* Textareas responsivos: autoajuste de altura e redimensionamento manual vertical. */
+textarea{
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  resize:vertical;
+  overflow-y:hidden;
+  overflow-wrap:anywhere;
+}
+label, .form-grid, .panel, .admin-panel, .product-form, .category-form{
+  min-width:0;
+  max-width:100%;
+}
+
+/* Identidade visual Fotomania no cabeçalho administrativo */
+.admin-header .admin-brand{display:flex;align-items:center;min-width:150px}
+.admin-header .admin-brand-logo{display:block;width:145px;height:auto;max-height:52px;object-fit:contain;object-position:left center}
+@media(max-width:640px){.admin-header .admin-brand-logo{width:118px;max-height:44px}}
