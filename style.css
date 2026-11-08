@@ -258,3 +258,10 @@ body.overlay-open{overflow:hidden}
 
 /* Pop-ups centralizados no estilo da Fotomania */
 .site-dialog-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:20px;background:rgba(22,16,19,.58);backdrop-filter:blur(5px)}.site-dialog-backdrop[hidden]{display:none}.site-dialog-card{width:min(100%,420px);padding:30px;border:1px solid var(--line);border-radius:20px;background:var(--surface);color:var(--ink);box-shadow:0 24px 80px rgba(0,0,0,.26);text-align:center;animation:site-dialog-in .18s ease-out}.site-dialog-mark{display:grid;place-items:center;width:50px;height:50px;margin:0 auto 15px;border-radius:16px;background:var(--red-soft);color:var(--red);font-size:26px}.site-dialog-card h2{margin:0 0 9px;font:800 22px var(--display)}.site-dialog-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.65;overflow-wrap:anywhere}.site-dialog-actions{display:flex;justify-content:center;gap:10px;margin-top:24px}.site-dialog-actions button{min-width:112px;min-height:42px;padding:10px 16px;border-radius:9px;font:700 13px var(--font);cursor:pointer}.site-dialog-confirm{border:1px solid var(--red);background:var(--red);color:#fff}.site-dialog-cancel{border:1px solid var(--line);background:var(--surface);color:var(--ink)}.site-dialog-cancel[hidden]{display:none}@keyframes site-dialog-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}@media(max-width:420px){.site-dialog-card{padding:24px 20px}.site-dialog-actions{flex-direction:column-reverse}.site-dialog-actions button{width:100%}}
+
+
+/* Total geral da sacola */
+.cart-grand-total{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0;margin:0 0 14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--ink);font-size:14px}
+.cart-grand-total span{font-weight:600;color:var(--muted)}
+.cart-grand-total strong{font-size:19px;font-weight:800;white-space:nowrap}
+.cart-grand-total[hidden]{display:none}

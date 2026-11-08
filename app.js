@@ -115,19 +115,66 @@ function addConfiguredProduct(p){
  persistCart();closeOverlays();openCart();
 }
 function persistCart(){try{localStorage.setItem("fotomania-cart",JSON.stringify(cart));}catch(_){}document.querySelector("#cart-count").textContent=cart.reduce((sum,item)=>sum+item.quantity,0);}
+function getCartItemUnitPrice(item){
+ return getTierPrice({price:item.price,priceTiers:item.productPriceTiers},getCartProductQuantity(item.productId));
+}
+function getCartItemSubtotal(item){
+ const unitPrice=getCartItemUnitPrice(item);
+ return unitPrice==null?null:unitPrice*(Number(item.quantity)||0);
+}
+function getCartGrandTotal(){
+ return cart.reduce((sum,item)=>sum+(getCartItemSubtotal(item)??0),0);
+}
+function ensureCartTotalElement(){
+ const footer=document.querySelector(".cart-footer");
+ if(!footer)return null;
+ let total=footer.querySelector("#cart-grand-total");
+ if(!total){
+  total=document.createElement("div");
+  total.id="cart-grand-total";
+  total.className="cart-grand-total";
+  const clearButton=footer.querySelector("#clear-cart-button");
+  footer.insertBefore(total,clearButton||footer.firstChild);
+ }
+ return total;
+}
 function renderCart(){
  const root=document.querySelector("#cart-items");
  const clearButton=document.querySelector("#clear-cart-button");
- if(!cart.length){root.innerHTML='<div class="cart-empty">Sua sacola ainda está vazia.<br>Explore as categorias e escolha seus produtos.</div>';document.querySelector("#checkout-button").disabled=true;clearButton.disabled=true;return;}
- document.querySelector("#checkout-button").disabled=false;clearButton.disabled=false;
- root.innerHTML=cart.map((item,index)=>`<article class="cart-item">${item.image&&String(item.image).trim()&&String(item.image).trim()!=="undefined"&&String(item.image).trim()!=="null"?`<img src="${escapeHtml(item.image)}" alt="">`:`<div class="cart-item-image-placeholder" aria-label="Imagem do produto indisponível">Fotomania</div>`}<div class="cart-item-details"><h3>${escapeHtml(item.name)}</h3><p>${Object.entries(item.options||{}).map(([key,value])=>`${escapeHtml(key)}: ${escapeHtml(value)}`).join(" · ")||"Produto simples"}</p><div class="cart-item-quantity"><span>Quantidade</span><div class="cart-quantity-control"><button type="button" data-cart-quantity="minus" data-cart-index="${index}" aria-label="Diminuir quantidade" ${item.quantity<=1?"disabled":""}>−</button><output aria-live="polite">${item.quantity}</output><button type="button" data-cart-quantity="plus" data-cart-index="${index}" aria-label="Aumentar quantidade" ${item.quantity>=99?"disabled":""}>+</button></div></div><strong>${money(getTierPrice({price:item.price,priceTiers:item.productPriceTiers},getCartProductQuantity(item.productId)))}${getTierPrice({price:item.price,priceTiers:item.productPriceTiers},getCartProductQuantity(item.productId))!=null?" cada":""}</strong><small class="cart-item-subtotal">Subtotal: ${money((getTierPrice({price:item.price,priceTiers:item.productPriceTiers},getCartProductQuantity(item.productId))??0)*item.quantity)}</small></div><button class="cart-item-remove" type="button" data-remove-item="${index}">Remover</button></article>`).join("");
+ const totalElement=ensureCartTotalElement();
+ if(!cart.length){
+  root.innerHTML='<div class="cart-empty">Sua sacola ainda está vazia.<br>Explore as categorias e escolha seus produtos.</div>';
+  document.querySelector("#checkout-button").disabled=true;
+  clearButton.disabled=true;
+  if(totalElement){totalElement.hidden=true;totalElement.innerHTML="";}
+  return;
+ }
+ document.querySelector("#checkout-button").disabled=false;
+ clearButton.disabled=false;
+ root.innerHTML=cart.map((item,index)=>{
+  const unitPrice=getCartItemUnitPrice(item),subtotal=getCartItemSubtotal(item);
+  return `<article class="cart-item">${item.image&&String(item.image).trim()&&String(item.image).trim()!=="undefined"&&String(item.image).trim()!=="null"?`<img src="${escapeHtml(item.image)}" alt="">`:`<div class="cart-item-image-placeholder" aria-label="Imagem do produto indisponível">Fotomania</div>`}<div class="cart-item-details"><h3>${escapeHtml(item.name)}</h3><p>${Object.entries(item.options||{}).map(([key,value])=>`${escapeHtml(key)}: ${escapeHtml(value)}`).join(" · ")||"Produto simples"}</p><div class="cart-item-quantity"><span>Quantidade</span><div class="cart-quantity-control"><button type="button" data-cart-quantity="minus" data-cart-index="${index}" aria-label="Diminuir quantidade" ${item.quantity<=1?"disabled":""}>−</button><output aria-live="polite">${item.quantity}</output><button type="button" data-cart-quantity="plus" data-cart-index="${index}" aria-label="Aumentar quantidade" ${item.quantity>=99?"disabled":""}>+</button></div></div><strong>${money(unitPrice)}${unitPrice!=null?" cada":""}</strong><small class="cart-item-subtotal">Subtotal: ${money(subtotal)}</small></div><button class="cart-item-remove" type="button" data-remove-item="${index}">Remover</button></article>`;
+ }).join("");
+ if(totalElement){
+  totalElement.hidden=false;
+  totalElement.innerHTML=`<span>Subtotal de todos os produtos</span><strong>${money(getCartGrandTotal())}</strong>`;
+ }
  attachImageFallbacks(root);
  root.querySelectorAll("[data-cart-quantity]").forEach(button=>button.addEventListener("click",()=>{const item=cart[Number(button.dataset.cartIndex)];if(!item)return;item.quantity=Math.max(1,Math.min(99,(Number(item.quantity)||1)+(button.dataset.cartQuantity==="plus"?1:-1)));persistCart();renderCart();}));
  root.querySelectorAll("[data-remove-item]").forEach(button=>button.addEventListener("click",()=>{cart.splice(Number(button.dataset.removeItem),1);persistCart();renderCart();}));
 }
 async function clearCart(){if(!cart.length)return;if(!await showSiteConfirm("Tem certeza de que deseja remover todos os produtos da sacola?","Limpar sacola?"))return;cart=[];persistCart();renderCart();}
 function openCart(){renderCart();showOverlay("cart");document.querySelector("#cart-close").focus();}
-function checkoutWhatsApp(){if(!cart.length)return;const lines=cart.map((item,i)=>`${i+1}. ${item.name}\n   Quantidade: ${item.quantity}\n   Valor unitário: ${money(getTierPrice({price:item.price,priceTiers:item.productPriceTiers},getCartProductQuantity(item.productId)))}\n   Subtotal: ${money((getTierPrice({price:item.price,priceTiers:item.productPriceTiers},getCartProductQuantity(item.productId))??0)*item.quantity)}\n   ${Object.entries(item.options).map(([k,v])=>`${k}: ${v}`).join("\n   ")}`).join("\n\n");const message=`Olá! Gostaria de solicitar um orçamento para os itens da minha sacola:\n\n${lines}\n\nPode me informar os valores e os próximos passos?`;window.open(`https://wa.me/5575982604989?text=${encodeURIComponent(message)}`,"_blank","noopener,noreferrer");}
+function checkoutWhatsApp(){
+ if(!cart.length)return;
+ const lines=cart.map((item,i)=>{
+  const unitPrice=getCartItemUnitPrice(item),subtotal=getCartItemSubtotal(item);
+  const options=Object.entries(item.options||{}).map(([k,v])=>`${k}: ${v}`).join("\n   ");
+  return `${i+1}. ${item.name}\n   Quantidade: ${item.quantity}\n   Valor unitário: ${money(unitPrice)}\n   Subtotal: ${money(subtotal)}${options?`\n   ${options}`:""}`;
+ }).join("\n\n");
+ const message=`Olá! Gostaria de solicitar um orçamento para os itens da minha sacola:\n\n${lines}\n\nSUBTOTAL GERAL: ${money(getCartGrandTotal())}\n\nPode me informar os valores e os próximos passos?`;
+ window.open(`https://wa.me/5575982604989?text=${encodeURIComponent(message)}`,"_blank","noopener,noreferrer");
+}
 function clearSearch(){searchTerm="";searchInput.value="";renderCategoryProducts();searchInput.focus();}
 searchInput.addEventListener("input",e=>{searchTerm=e.target.value.trim().toLocaleLowerCase("pt-BR");renderCategoryProducts();});clearFiltersButton.addEventListener("click",clearSearch);document.querySelector("#clear-empty").addEventListener("click",clearSearch);window.addEventListener("popstate",renderRoute);
 document.querySelector("#brand-home").addEventListener("click",e=>{e.preventDefault();navigateHome();});document.querySelector("#nav-home").addEventListener("click",e=>{e.preventDefault();navigateHome();});
