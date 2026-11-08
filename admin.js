@@ -31,15 +31,21 @@ async function refresh(){try{const data=await getAdminCatalog();categories=data.
 function renderLists(){
   $("category-list").innerHTML=categories.map(c=>`<div class="record"><div><strong>${safe(c.name)}</strong><small>${c.published?"Publicada":"Oculta"} · ordem ${Number(c.order)||0}</small></div><div class="record-actions"><button data-edit-category="${c.id}">Editar</button><button class="delete" data-delete-category="${c.id}">Excluir</button></div></div>`).join("")||"<p class='status'>Nenhuma categoria cadastrada.</p>";
   $("product-category").innerHTML='<option value="">Selecione</option>'+categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join("");
-  const listFilter=$("product-list-category");
-  const selectedFilter=listFilter.value;
-  listFilter.innerHTML='<option value="">Todas as categorias</option>'+categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join("");
-  if(categories.some(c=>c.name===selectedFilter))listFilter.value=selectedFilter;
+  renderProductCategoryFilter();
   renderProductList();
   document.querySelectorAll("[data-edit-category]").forEach(b=>b.onclick=()=>editCategory(b.dataset.editCategory));
   document.querySelectorAll("[data-delete-category]").forEach(b=>b.onclick=()=>removeCategory(b.dataset.deleteCategory));
   document.querySelectorAll("[data-edit-product]").forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
   document.querySelectorAll("[data-delete-product]").forEach(b=>b.onclick=()=>removeProduct(b.dataset.deleteProduct));
+}
+function renderProductCategoryFilter(){
+  const listFilter=$("product-list-category");
+  if(!listFilter)return;
+  const selectedFilter=listFilter.value;
+  const names=[...new Set(categories.map(category=>String(category.name||"").trim()).filter(Boolean))];
+  listFilter.replaceChildren(new Option("Todas as categorias",""));
+  names.forEach(name=>listFilter.add(new Option(name,name)));
+  listFilter.value=names.includes(selectedFilter)?selectedFilter:"";
 }
 function renderProductList(){
   const selected=$("product-list-category").value;
@@ -52,7 +58,7 @@ function renderProductList(){
 $("product-list-category").addEventListener("change",renderProductList);
 function resetCategory(){$("category-form").reset();$("category-id").value="";$("category-order").value=categories.length;$("category-published").checked=true;}
 function resetProduct(){
-  $("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;$("product-variants").value="";customFields=[];productPriceTiers=[];renderCustomFields();renderProductPriceTiers();toggleCustomFields();
+  $("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;customFields=[];productPriceTiers=[];renderCustomFields();renderProductPriceTiers();toggleCustomFields();
   $("product-image-file-id").value="";$("product-image-file").value="";setImagePreview("");message($("product-image-status"),"");
 }
 function legacyFields(product){
@@ -88,7 +94,7 @@ $("product-type").addEventListener("change",toggleCustomFields);
 $("add-custom-field").addEventListener("click",()=>{customFields.push({label:"",type:"buttons",required:false,options:[{label:""}]});renderCustomFields();});
 
 function editCategory(id){const c=categories.find(x=>x.id===id);if(!c)return;$("category-id").value=id;$("category-name").value=c.name||"";$("category-description").value=c.description||"";$("category-order").value=c.order??0;$("category-published").checked=c.published===true;$("category-name").focus();}
-function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$("product-id").value=id;$("product-name").value=p.name||"";$("product-category").value=p.category||"";$("product-description").value=p.description||"";$("product-details").value=p.details||"";$("product-price").value=p.price??"";$("product-type").value=(p.type==="simple"?"simple":"custom");customFields=legacyFields(p).map(field=>({...field,options:(field.options||[]).map(option=>({...option}))}));productPriceTiers=Array.isArray(p.priceTiers)?p.priceTiers.map(tier=>({...tier})):[];renderProductPriceTiers();renderCustomFields();toggleCustomFields();$("product-image").value=p.image||"";$("product-image-file-id").value=p.imageFileId||"";setImagePreview(p.image||"");$("product-image-file").value="";message($("product-image-status"),"");$("product-tag").value=p.tag||"";$("product-variants").value="";$("product-order").value=p.order??0;$("product-featured").checked=p.featured===true;$("product-published").checked=p.published===true;$("product-name").focus();}
+function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$("product-id").value=id;$("product-name").value=p.name||"";$("product-category").value=p.category||"";$("product-description").value=p.description||"";$("product-details").value=p.details||"";$("product-price").value=p.price??"";$("product-type").value=(p.type==="simple"?"simple":"custom");customFields=legacyFields(p).map(field=>({...field,options:(field.options||[]).map(option=>({...option}))}));productPriceTiers=Array.isArray(p.priceTiers)?p.priceTiers.map(tier=>({...tier})):[];renderProductPriceTiers();renderCustomFields();toggleCustomFields();$("product-image").value=p.image||"";$("product-image-file-id").value=p.imageFileId||"";setImagePreview(p.image||"");$("product-image-file").value="";message($("product-image-status"),"");$("product-tag").value=p.tag||"";$("product-order").value=p.order??0;$("product-featured").checked=p.featured===true;$("product-published").checked=p.published===true;$("product-name").focus();}
 
 function setImagePreview(url){
   if(localImagePreviewUrl && url!==localImagePreviewUrl){URL.revokeObjectURL(localImagePreviewUrl);localImagePreviewUrl="";}

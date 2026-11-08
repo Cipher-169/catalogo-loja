@@ -22,7 +22,7 @@
 
 /* Textareas responsivos: autoajuste de altura e redimensionamento manual vertical. */
 textarea{
-  min-height:110px;
+  min-height:82px;
   display:block;
   width:100%;
   max-width:100%;
@@ -59,4 +59,27 @@ label, .form-grid, .panel, .admin-panel, .product-form, .category-form{
   max-height: 48px;
   object-fit: contain;
   object-position: left center;
+}
+
+/* Alturas iniciais equilibradas para os campos de texto do produto. */
+#product-description{min-height:82px}
+#product-details{min-height:96px}
+
+/* Mantém a marca visível e proporcional no cabeçalho administrativo. */
+.admin-header .admin-brand{
+  display:flex;
+  flex:0 0 150px;
+  width:150px;
+  max-width:150px;
+  height:48px;
+  overflow:visible;
+}
+.admin-header .admin-brand-logo{
+  display:block;
+  width:150px;
+  max-width:150px;
+  height:44px;
+  max-height:44px;
+  object-fit:contain;
+  object-position:left center;
 }
