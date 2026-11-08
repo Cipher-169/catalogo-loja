@@ -12,8 +12,8 @@ export async function getPublicCatalog() {
     getDocs(query(collection(db, "products"), where("published", "==", true), orderBy("order", "asc")))
   ]);
   return {
-    categories: categorySnapshot.docs.map(item => ({ id: item.id, ...item.data() })),
-    products: productSnapshot.docs.map(item => ({ id: item.id, ...item.data() }))
+    categories: categorySnapshot.docs.map(item => ({ ...item.data(), id: item.id })),
+    products: productSnapshot.docs.map(item => ({ ...item.data(), id: item.id }))
   };
 }
 
@@ -42,7 +42,7 @@ export async function getAdminCatalog() {
     getDocs(query(collection(db, "products"), orderBy("order", "asc")))
   ]);
   return {
-    categories: categorySnapshot.docs.map(item => ({ id: item.id, ...item.data() })),
-    products: productSnapshot.docs.map(item => ({ id: item.id, ...item.data() }))
+    categories: categorySnapshot.docs.map(item => ({ ...item.data(), id: item.id })),
+    products: productSnapshot.docs.map(item => ({ ...item.data(), id: item.id }))
   };
 }
