@@ -51,13 +51,14 @@ function renderImageLibrary(){
   const search=$("image-library-search").value.trim().toLocaleLowerCase("pt-BR");
   const usage=$("image-library-usage").value;
   const linkedIds=new Set(products.map(product=>product.imageFileId).filter(Boolean));
+  const isUsed=file=>linkedIds.has(file.fileId)||products.some(product=>product.image&&file.url&&product.image===file.url);
   const filtered=imageLibraryFiles.filter(file=>{
-    const used=linkedIds.has(file.fileId);
+    const used=isUsed(file);
     const matchesUsage=usage==="all"||(usage==="used"&&used)||(usage==="unused"&&!used);
     return matchesUsage&&String(file.name||"").toLocaleLowerCase("pt-BR").includes(search);
   });
   $("image-library-grid").innerHTML=filtered.map(file=>{
-    const used=linkedIds.has(file.fileId);
+    const used=isUsed(file);
     const imageUrl=file.thumbnail||file.url;
     return `<article class="image-library-card">
       <a class="image-library-preview" href="${safe(file.url||imageUrl)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir imagem ${safe(file.name)}">
@@ -66,12 +67,55 @@ function renderImageLibrary(){
       <div class="image-library-card-info"><strong title="${safe(file.name)}">${safe(file.name||"Arquivo sem nome")}</strong>
       <small>${formatImageSize(file.size)} · ${formatImageDate(file.createdAt)}</small>
       <span class="image-library-link-state ${used?"is-used":"is-unused"}">${used?"Vinculada a produto":"Sem vínculo com produto"}</span>
-      <small class="image-library-file-id">ID: ${safe(file.fileId||"não informado")}</small></div>
+      <small class="image-library-file-id">ID: ${safe(file.fileId||"não informado")}</small>
+      ${used
+        ? '<button class="image-library-delete" type="button" disabled title="Imagem vinculada a um produto">Em uso · protegida</button>'
+        : `<button class="image-library-delete" type="button" data-delete-image="${safe(file.fileId)}">Excluir imagem</button>`}
+      </div>
     </article>`;
   }).join("")||'<p class="image-library-empty">Nenhuma imagem corresponde aos filtros desta página.</p>';
+  document.querySelectorAll("[data-delete-image]").forEach(button=>{
+    button.addEventListener("click",()=>deleteLibraryImage(button.dataset.deleteImage),{once:true});
+  });
   $("image-library-page").textContent=`Página ${Math.floor(imageLibrarySkip/IMAGE_LIBRARY_LIMIT)+1}`;
   $("image-library-prev").disabled=imageLibrarySkip===0;
   $("image-library-next").disabled=!imageLibraryHasNext;
+}
+async function deleteLibraryImage(fileId){
+  if(auth.currentUser?.uid!==IMAGE_MANAGER_UID)return;
+  const file=imageLibraryFiles.find(item=>item.fileId===fileId);
+  if(!file)return;
+  if(products.some(product=>product.imageFileId===fileId||(product.image&&file.url&&product.image===file.url))){
+    message($("image-library-status"),"Esta imagem está vinculada a um produto e não pode ser excluída.");
+    return;
+  }
+  const confirmed=await showAdminConfirm(
+    `Você está prestes a excluir permanentemente “${file.name||"imagem sem nome"}” do ImageKit. Esta ação não pode ser desfeita. A imagem só será apagada se o servidor confirmar que nenhum produto a utiliza.`,
+    "Excluir imagem permanentemente?"
+  );
+  if(!confirmed)return;
+  const button=[...document.querySelectorAll("[data-delete-image]")].find(item=>item.dataset.deleteImage===fileId);
+  if(button){button.disabled=true;button.textContent="Excluindo...";}
+  message($("image-library-status"),"Verificando vínculos e excluindo imagem...");
+  try{
+    const user=auth.currentUser;
+    if(!user)throw new Error("Sessão expirada. Entre novamente.");
+    const token=await user.getIdToken();
+    const response=await fetch(IMAGE_UPLOAD_ENDPOINT,{
+      method:"POST",
+      headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
+      body:JSON.stringify({action:"delete-library-image",fileId})
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||`Falha ao excluir imagem (HTTP ${response.status}).`);
+    imageLibraryFiles=imageLibraryFiles.filter(item=>item.fileId!==fileId);
+    if(imageLibraryFiles.length===0&&imageLibrarySkip>0)imageLibrarySkip=Math.max(0,imageLibrarySkip-IMAGE_LIBRARY_LIMIT);
+    renderImageLibrary();
+    message($("image-library-status"),"Imagem excluída permanentemente do ImageKit.");
+  }catch(error){
+    message($("image-library-status"),error.message||"Não foi possível excluir a imagem.");
+    if(button){button.disabled=false;button.textContent="Excluir imagem";}
+  }
 }
 async function loadImageLibrary({reset=false}={}){
   if(auth.currentUser?.uid!==IMAGE_MANAGER_UID)return;
