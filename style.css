@@ -300,3 +300,21 @@ html,body{max-width:100%;overflow-x:clip}
 }
 /* Preserva as quebras de linha cadastradas nos detalhes do produto. */
 .modal-copy > p { white-space: pre-line; }
+
+/* Fotomania — imagens de produtos sempre completas, sem cortes. */
+.product-image img {
+  object-fit: contain;
+  transform: none !important;
+}
+
+.modal-image {
+  object-fit: contain;
+}
+
+@media (max-width: 620px) {
+  .modal-image {
+    aspect-ratio: 4 / 5;
+    max-height: min(52vh, 340px);
+    width: 100%;
+  }
+}
