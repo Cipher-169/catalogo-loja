@@ -1,6 +1,6 @@
 import { auth } from "./firebase.js";
 import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import { getAdminCatalog, createCategory, updateCategory, deleteCategory, createProduct, updateProduct, deleteProduct } from "./catalog-service.js";
+import { getAdminCatalog, createCategory, updateCategory, deleteCategory, createProduct, updateProduct, deleteProduct, isImageFileInUse } from "./catalog-service.js";
 
 const ADMIN_UIDS = ["nTFrJYgehtOYSPz6z8yMdOftQRn2", "MkBiNVj74keXFeJCFWDUwRJVxD22", "ofBu9ybOYION977yuvNTSXyFaw13"];
 // Preencha após publicar o Worker no Cloudflare. Não coloque segredos aqui.
@@ -31,21 +31,15 @@ async function refresh(){try{const data=await getAdminCatalog();categories=data.
 function renderLists(){
   $("category-list").innerHTML=categories.map(c=>`<div class="record"><div><strong>${safe(c.name)}</strong><small>${c.published?"Publicada":"Oculta"} · ordem ${Number(c.order)||0}</small></div><div class="record-actions"><button data-edit-category="${c.id}">Editar</button><button class="delete" data-delete-category="${c.id}">Excluir</button></div></div>`).join("")||"<p class='status'>Nenhuma categoria cadastrada.</p>";
   $("product-category").innerHTML='<option value="">Selecione</option>'+categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join("");
-  renderProductCategoryFilter();
+  const listFilter=$("product-list-category");
+  const selectedFilter=listFilter.value;
+  listFilter.innerHTML='<option value="">Todas as categorias</option>'+categories.map(c=>`<option value="${safe(c.name)}">${safe(c.name)}</option>`).join("");
+  if(categories.some(c=>c.name===selectedFilter))listFilter.value=selectedFilter;
   renderProductList();
   document.querySelectorAll("[data-edit-category]").forEach(b=>b.onclick=()=>editCategory(b.dataset.editCategory));
   document.querySelectorAll("[data-delete-category]").forEach(b=>b.onclick=()=>removeCategory(b.dataset.deleteCategory));
   document.querySelectorAll("[data-edit-product]").forEach(b=>b.onclick=()=>editProduct(b.dataset.editProduct));
   document.querySelectorAll("[data-delete-product]").forEach(b=>b.onclick=()=>removeProduct(b.dataset.deleteProduct));
-}
-function renderProductCategoryFilter(){
-  const listFilter=$("product-list-category");
-  if(!listFilter)return;
-  const selectedFilter=listFilter.value;
-  const names=[...new Set(categories.map(category=>String(category.name||"").trim()).filter(Boolean))];
-  listFilter.replaceChildren(new Option("Todas as categorias",""));
-  names.forEach(name=>listFilter.add(new Option(name,name)));
-  listFilter.value=names.includes(selectedFilter)?selectedFilter:"";
 }
 function renderProductList(){
   const selected=$("product-list-category").value;
@@ -58,7 +52,7 @@ function renderProductList(){
 $("product-list-category").addEventListener("change",renderProductList);
 function resetCategory(){$("category-form").reset();$("category-id").value="";$("category-order").value=categories.length;$("category-published").checked=true;}
 function resetProduct(){
-  $("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;customFields=[];productPriceTiers=[];renderCustomFields();renderProductPriceTiers();toggleCustomFields();
+  $("product-form").reset();$("product-id").value="";$("product-order").value=products.length;$("product-published").checked=true;$("product-variants").value="";customFields=[];productPriceTiers=[];renderCustomFields();renderProductPriceTiers();toggleCustomFields();
   $("product-image-file-id").value="";$("product-image-file").value="";setImagePreview("");message($("product-image-status"),"");
 }
 function legacyFields(product){
@@ -94,7 +88,7 @@ $("product-type").addEventListener("change",toggleCustomFields);
 $("add-custom-field").addEventListener("click",()=>{customFields.push({label:"",type:"buttons",required:false,options:[{label:""}]});renderCustomFields();});
 
 function editCategory(id){const c=categories.find(x=>x.id===id);if(!c)return;$("category-id").value=id;$("category-name").value=c.name||"";$("category-description").value=c.description||"";$("category-order").value=c.order??0;$("category-published").checked=c.published===true;$("category-name").focus();}
-function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$("product-id").value=id;$("product-name").value=p.name||"";$("product-category").value=p.category||"";$("product-description").value=p.description||"";$("product-details").value=p.details||"";$("product-price").value=p.price??"";$("product-type").value=(p.type==="simple"?"simple":"custom");customFields=legacyFields(p).map(field=>({...field,options:(field.options||[]).map(option=>({...option}))}));productPriceTiers=Array.isArray(p.priceTiers)?p.priceTiers.map(tier=>({...tier})):[];renderProductPriceTiers();renderCustomFields();toggleCustomFields();$("product-image").value=p.image||"";$("product-image-file-id").value=p.imageFileId||"";setImagePreview(p.image||"");$("product-image-file").value="";message($("product-image-status"),"");$("product-tag").value=p.tag||"";$("product-order").value=p.order??0;$("product-featured").checked=p.featured===true;$("product-published").checked=p.published===true;$("product-name").focus();}
+function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$("product-id").value=id;$("product-name").value=p.name||"";$("product-category").value=p.category||"";$("product-description").value=p.description||"";$("product-details").value=p.details||"";$("product-price").value=p.price??"";$("product-type").value=(p.type==="simple"?"simple":"custom");customFields=legacyFields(p).map(field=>({...field,options:(field.options||[]).map(option=>({...option}))}));productPriceTiers=Array.isArray(p.priceTiers)?p.priceTiers.map(tier=>({...tier})):[];renderProductPriceTiers();renderCustomFields();toggleCustomFields();$("product-image").value=p.image||"";$("product-image-file-id").value=p.imageFileId||"";setImagePreview(p.image||"");$("product-image-file").value="";message($("product-image-status"),"");$("product-tag").value=p.tag||"";$("product-variants").value="";$("product-order").value=p.order??0;$("product-featured").checked=p.featured===true;$("product-published").checked=p.published===true;$("product-name").focus();}
 
 function setImagePreview(url){
   if(localImagePreviewUrl && url!==localImagePreviewUrl){URL.revokeObjectURL(localImagePreviewUrl);localImagePreviewUrl="";}
@@ -146,7 +140,36 @@ $("upload-product-image").addEventListener("click",async()=>{
 $("category-form").addEventListener("submit",async e=>{e.preventDefault();const id=$("category-id").value;const data={name:$("category-name").value.trim(),description:$("category-description").value.trim(),order:Number($("category-order").value)||0,published:$("category-published").checked};try{if(id)await updateCategory(id,data);else await createCategory(data);resetCategory();await refresh();message(dashboardFeedback,"Categoria salva.");}catch(error){message(dashboardFeedback,"Não foi possível salvar a categoria: "+error.message);}});
 $("product-form").addEventListener("submit",async e=>{e.preventDefault();const id=$("product-id").value;const type=$("product-type").value;for(const tier of productPriceTiers){if(!Number.isInteger(Number(tier.min))||Number(tier.min)<1||tier.price==null||!Number.isFinite(Number(tier.price))||Number(tier.price)<0){message(dashboardFeedback,"Revise as faixas de preço progressivo. Informe uma quantidade inicial e um preço unitário válido em cada faixa.");return;}}if(new Set(productPriceTiers.map(t=>Number(t.min))).size!==productPriceTiers.length){message(dashboardFeedback,"Existem faixas de quantidade repetidas no preço progressivo.");return;}if(productPriceTiers.length&&Math.min(...productPriceTiers.map(t=>Number(t.min)))!==1){message(dashboardFeedback,"A primeira faixa do preço progressivo precisa começar em 1 unidade.");return;}if(type==="custom"){for(let i=0;i<customFields.length;i++){const field=customFields[i];if(!field.label.trim()){message(dashboardFeedback,`Informe o título do campo ${i+1}.`);return;}if(field.type!=="text"&&(!field.options.length||field.options.some(option=>!option.label.trim()))){message(dashboardFeedback,`Preencha todas as opções do campo “${field.label}”.`);return;}}}const rawPrice=$("product-price").value;const data={name:$("product-name").value.trim(),category:$("product-category").value,description:$("product-description").value.trim(),details:$("product-details").value.trim(),price:rawPrice===""?null:Number(rawPrice),priceTiers:productPriceTiers.map(tier=>({min:Number(tier.min),price:Number(tier.price)})),type,image:$("product-image").value.trim(),imageFileId:$("product-image-file-id").value.trim()||null,tag:$("product-tag").value.trim()||"FOTOMANIA",customFields:type==="custom"?customFields.map(field=>({...field,options:(field.options||[]).map(option=>({...option}))})):[],variants:[],order:Number($("product-order").value)||0,featured:$("product-featured").checked,published:$("product-published").checked};try{if(id)await updateProduct(id,data);else await createProduct(data);resetProduct();await refresh();message(dashboardFeedback,"Produto salvo.");}catch(error){message(dashboardFeedback,"Não foi possível salvar o produto: "+error.message);}});
 async function removeCategory(id){const c=categories.find(x=>x.id===id);if(!c||!await showAdminConfirm(`Excluir a categoria “${c.name}”? Produtos vinculados não serão excluídos automaticamente.`,"Excluir categoria?"))return;try{await deleteCategory(id);await refresh();message(dashboardFeedback,"Categoria excluída.");}catch(error){message(dashboardFeedback,error.message);}}
-async function removeProduct(id){const p=products.find(x=>x.id===id);if(!p||!await showAdminConfirm(`Excluir o produto “${p.name}”?`,"Excluir produto?"))return;try{await deleteProduct(id);await refresh();message(dashboardFeedback,"Produto excluído.");}catch(error){message(dashboardFeedback,error.message);}}
+async function removeProduct(id){
+  const p=products.find(x=>x.id===id);
+  if(!p||!await showAdminConfirm(`Excluir o produto “${p.name}”?${p.imageFileId?" A imagem será removida do ImageKit se nenhum outro produto a utilizar.":""}`,"Excluir produto?"))return;
+  try{
+    // Primeiro remove o registro. Em seguida, verifica se a imagem ainda está em uso.
+    await deleteProduct(id);
+    await refresh();
+    if(p.imageFileId){
+      const stillInUse=await isImageFileInUse(p.imageFileId);
+      if(!stillInUse){
+        try{
+          const user=auth.currentUser;
+          if(!user)throw new Error("Sessão expirada. Entre novamente para concluir a remoção da imagem.");
+          const token=await user.getIdToken();
+          const response=await fetch(IMAGE_UPLOAD_ENDPOINT,{method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify({action:"delete",fileId:p.imageFileId})});
+          const result=await response.json().catch(()=>({}));
+          if(!response.ok)throw new Error(result.error||`Falha ao excluir a imagem (HTTP ${response.status}).`);
+          message(dashboardFeedback,result.alreadyMissing?"Produto excluído. A imagem já não existia no ImageKit.":"Produto e imagem excluídos com sucesso.");
+          return;
+        }catch(imageError){
+          message(dashboardFeedback,`Produto excluído, mas não foi possível remover a imagem do ImageKit: ${imageError.message} Código do arquivo: ${p.imageFileId}`);
+          return;
+        }
+      }
+      message(dashboardFeedback,"Produto excluído. A imagem foi preservada porque ainda está sendo utilizada por outro produto.");
+      return;
+    }
+    message(dashboardFeedback,"Produto excluído. Não havia um arquivo do ImageKit associado para remover.");
+  }catch(error){message(dashboardFeedback,error.message||"Não foi possível excluir o produto.");}
+}
 $("category-cancel").addEventListener("click",resetCategory);$("product-cancel").addEventListener("click",resetProduct);
 resetCategory();resetProduct();
 

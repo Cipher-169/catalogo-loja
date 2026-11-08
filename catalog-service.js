@@ -118,3 +118,10 @@ export function updateProduct(id, data) {
 export function deleteProduct(id) {
   return deleteDoc(doc(db, "products", id));
 }
+
+// Verifica se outro produto ainda utiliza o mesmo arquivo do ImageKit.
+export async function isImageFileInUse(fileId) {
+  if (!fileId) return false;
+  const snapshot = await getDocs(query(productsCollection, where("imageFileId", "==", fileId)));
+  return !snapshot.empty;
+}
