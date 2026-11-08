@@ -44,7 +44,7 @@ function bindModalAddButton(product){
  });
 }
 function renderFeaturedProducts(){
-  const featured=products.filter(product=>product.featured).slice(0,4);
+  const featured=products.filter(product=>product.featured).sort((a,b)=>b.order-a.order).slice(0,4);
   featuredGrid.innerHTML=featured.map(productCard).join("");
   if(catalogLoaded&&!featured.length)featuredGrid.innerHTML='<p class="catalog-status">Nenhum produto em destaque no momento.</p>';
   attachImageFallbacks(featuredGrid);
@@ -200,7 +200,7 @@ renderCategoryCards();renderFeaturedProducts();renderRoute();persistCart();
 // Carrega somente registros publicados; em caso de falha, não exibe dados fictícios.
 try {
   const remote = await getPublicCatalog();
-  categories = remote.categories.filter(item=>item.published===true&&item.name).sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+  categories = remote.categories.filter(item=>item.published===true&&item.name).sort((a,b)=>(Number(b.order)||0)-(Number(a.order)||0));
   const validCategoryNames = new Set(categories.map(category=>category.name));
   products = remote.products.filter(item=>item.published===true&&validCategoryNames.has(item.category)).map(item=>({
     id:item.id,name:item.name||"Produto",category:item.category,description:item.description||"",
