@@ -298,3 +298,5 @@ html,body{max-width:100%;overflow-x:clip}
   .site-header .brand-logo{width:145px;max-height:46px}
   .site-footer .brand-logo-footer,footer .brand-logo-footer{width:125px;max-height:42px}
 }
+/* Preserva as quebras de linha cadastradas nos detalhes do produto. */
+.modal-copy > p { white-space: pre-line; }
