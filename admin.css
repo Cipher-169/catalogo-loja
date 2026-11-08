@@ -38,25 +38,17 @@ label, .form-grid, .panel, .admin-panel, .product-form, .category-form{
 }
 
 
-/* Dimensões explícitas da logo no cabeçalho administrativo. */
-.admin-header .admin-brand{
-  display:flex;
-  align-items:center;
-  flex:0 1 auto;
-  min-width:0;
-  max-width:190px;
-}
-.admin-header .admin-brand-logo{
-  display:block;
-  width:150px;
+/* Altura inicial garantida para os campos de texto do painel. */
+.admin-content textarea,
+textarea:not([hidden]){
+  min-height:120px !important;
+  height:120px;
+  width:100%;
   max-width:100%;
-  height:auto;
-  max-height:48px;
-  object-fit:contain;
-  object-position:left center;
-}
-.admin-header{min-width:0;max-width:100%;overflow:hidden}
-@media(max-width:480px){
-  .admin-header .admin-brand{max-width:145px}
-  .admin-header .admin-brand-logo{width:125px;max-height:42px}
+  min-width:0;
+  box-sizing:border-box;
+  display:block;
+  resize:vertical;
+  overflow-y:hidden;
+  overflow-wrap:anywhere;
 }

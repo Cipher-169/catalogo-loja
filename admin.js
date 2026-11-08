@@ -131,17 +131,17 @@ async function removeProduct(id){const p=products.find(x=>x.id===id);if(!p||!awa
 $("category-cancel").addEventListener("click",resetCategory);$("product-cancel").addEventListener("click",resetProduct);
 resetCategory();resetProduct();
 
-// Textareas do painel: crescem conforme o conteúdo, sem perder o redimensionamento manual.
+// Textareas do painel: tamanho inicial confortável + crescimento automático.
+const ADMIN_TEXTAREA_MIN_HEIGHT = 120;
 function fitAdminTextarea(textarea){
  if(!textarea || textarea.hidden || textarea.type==="hidden")return;
- textarea.style.height="auto";
- textarea.style.height=`${Math.max(textarea.scrollHeight, textarea.dataset.minHeight ? Number(textarea.dataset.minHeight) : 0)}px`;
+ textarea.style.minHeight = `${ADMIN_TEXTAREA_MIN_HEIGHT}px`;
+ textarea.style.height = "auto";
+ textarea.style.height = `${Math.max(textarea.scrollHeight, ADMIN_TEXTAREA_MIN_HEIGHT)}px`;
 }
 function setupAdminTextareas(){
- document.querySelectorAll("textarea").forEach(textarea=>{
-  if(textarea.type==="hidden" || textarea.hidden)return;
-  const computed=getComputedStyle(textarea);
-  textarea.dataset.minHeight=String(parseFloat(computed.minHeight)||0);
+ document.querySelectorAll("textarea:not([hidden])").forEach(textarea=>{
+  if(textarea.type==="hidden")return;
   fitAdminTextarea(textarea);
   textarea.addEventListener("input",()=>fitAdminTextarea(textarea));
  });
