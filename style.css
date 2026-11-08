@@ -265,3 +265,8 @@ body.overlay-open{overflow:hidden}
 .cart-grand-total span{font-weight:600;color:var(--muted)}
 .cart-grand-total strong{font-size:19px;font-weight:800;white-space:nowrap}
 .cart-grand-total[hidden]{display:none}
+
+/* Identidade visual Fotomania */
+.brand{display:inline-flex;align-items:center;flex-shrink:0;gap:0;width:190px}
+.brand-logo{display:block;width:100%;height:auto;max-height:58px;object-fit:contain;object-position:left center}
+@media(max-width:640px){.brand{width:145px}.brand-logo{max-height:48px}}
