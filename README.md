@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📸 Fotomania — Catálogo Digital
+# 📸 Fotomania - Catálogo Digital
 
 **Suas lembranças, do seu jeito.**
 
