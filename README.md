@@ -1,107 +1,114 @@
-# Fotomania — Catálogo Digital
+# 📸 Fotomania — Catálogo Digital
 
-<p align="center">
-  <strong>Suas lembranças, do seu jeito.</strong>
-</p>
+<div align="center">
 
-<p align="center">
-  Um catálogo digital para apresentar produtos fotográficos personalizados, facilitar a escolha dos clientes e otimizar o processo de solicitação de pedidos.
-</p>
+**Suas lembranças, do seu jeito.**
 
-<p align="center">
-  <a href="https://cipher-169.github.io/catalogo-loja/">Acessar projeto</a>
-</p>
+Um catálogo digital para explorar produtos fotográficos personalizados e realizar pedidos de forma simples e intuitiva.
+
+🔗 **[Acessar o site](https://cipher-169.github.io/catalogo-loja/)**
+
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-ff916b?style=for-the-badge)
+![Firebase](https://img.shields.io/badge/Firebase-integrado-FFCA28?style=for-the-badge&logo=firebase&logoColor=111827)
+![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-f1c879?style=for-the-badge&logo=javascript&logoColor=111827)
+![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
+
+</div>
+
+<!-- Coloque aqui um print da tela principal: ![Print do catálogo](img/print.png) -->
 
 ---
 
-## Sobre o projeto
+## ✨ Sobre o projeto
 
-A **Fotomania** é uma aplicação web desenvolvida para uma loja de produtos fotográficos personalizados. O projeto busca modernizar a apresentação dos produtos e proporcionar uma experiência de navegação simples, intuitiva e acessível.
+A **Fotomania** é uma aplicação web desenvolvida para modernizar a apresentação e a comercialização de produtos fotográficos personalizados.
 
-A aplicação permite que os clientes explorem o catálogo, consultem informações e preços, personalizem produtos, organizem suas escolhas em uma sacola e encaminhem seus pedidos diretamente pelo WhatsApp.
+O projeto reúne um catálogo digital, recursos de personalização e uma sacola de compras, permitindo que os clientes explorem os produtos, consultem preços e encaminhem seus pedidos diretamente pelo WhatsApp.
 
-Além da interface voltada aos clientes, o projeto conta com um painel administrativo para gerenciamento do catálogo, permitindo que os responsáveis pela loja mantenham produtos e categorias atualizados.
+Além da experiência voltada aos clientes, a aplicação possui um painel administrativo próprio para gerenciar produtos, categorias e imagens do catálogo.
 
-## Funcionalidades
+## 📸 Funcionalidades
 
-### Catálogo de produtos
+**Catálogo e produtos**
 - Exibição dinâmica de produtos e categorias.
-- Consulta de informações, imagens e preços.
+- Visualização de imagens e detalhes dos produtos.
 - Produtos personalizados com opções configuráveis.
-- Suporte a diferentes modalidades de produtos fotográficos.
+- Apresentação de preços e condições de compra.
 
-### Personalização e pedidos
+**Personalização e pedidos**
 - Seleção de opções e quantidades.
-- Campo para inserção manual de quantidades.
-- Cálculo automático de preços e subtotais.
-- Aplicação de preços progressivos para produtos elegíveis.
+- Inserção manual de quantidades.
+- Cálculo automático de subtotais e valores.
+- Preços progressivos para produtos elegíveis.
 - Sacola de compras com resumo do pedido.
-- Integração com WhatsApp para encaminhamento dos pedidos.
+- Redirecionamento para o WhatsApp para finalizar a solicitação.
 
-### Painel administrativo
-- Autenticação de usuários administradores.
+**Painel administrativo**
+- Autenticação de administradores.
 - Controle de acesso por usuários autorizados.
 - Cadastro, edição e exclusão de produtos.
 - Gerenciamento de categorias.
 - Publicação e despublicação de produtos.
-- Gerenciamento de imagens utilizadas no catálogo.
+- Gerenciador de imagens com visualização e pesquisa.
+- Exclusão manual de imagens sem vínculo com produtos, mediante confirmação e validação no servidor.
 
-### Experiência do usuário
+**Experiência do usuário**
 - Interface responsiva.
 - Tema claro e escuro.
-- Persistência das preferências de tema.
-- Tratamento de imagens e apresentação adaptável a diferentes dispositivos.
+- Persistência da preferência de tema.
+- Apresentação adaptada para diferentes dispositivos.
 
-## Tecnologias utilizadas
+## 🛍️ Sistema de preços e personalização
 
-| Tecnologia | Aplicação |
-|---|---|
-| HTML5 | Estrutura da aplicação |
-| CSS3 | Estilização e responsividade |
-| JavaScript | Lógica e interatividade |
-| Firebase Authentication | Autenticação administrativa |
-| Cloud Firestore | Armazenamento de produtos e categorias |
-| ImageKit | Armazenamento e entrega de imagens |
-| Cloudflare Workers | Processamento seguro de operações no servidor |
-| GitHub Pages | Hospedagem da aplicação |
+Um dos diferenciais do projeto é a possibilidade de configurar produtos com diferentes opções e regras de preço.
 
-## Arquitetura
+Nos produtos fotográficos elegíveis, o sistema utiliza **preços progressivos por quantidade**, permitindo que o valor unitário varie conforme a quantidade solicitada dentro de cada faixa.
 
-A aplicação utiliza uma arquitetura baseada em serviços, separando a interface do usuário, o armazenamento de dados e as operações que exigem processamento no servidor.
+O cálculo considera separadamente os tamanhos e as respectivas quantidades, evitando combinar produtos de dimensões diferentes para alcançar uma faixa de preço.
 
-- **Frontend:** interface construída com HTML, CSS e JavaScript.
-- **Firebase:** gerenciamento de autenticação e persistência dos dados do catálogo.
-- **ImageKit:** armazenamento e disponibilização das imagens dos produtos.
-- **Cloudflare Workers:** intermediação de operações protegidas, incluindo o processamento de uploads.
-- **GitHub Pages:** disponibilização pública da aplicação.
+## 🧩 Tecnologias
 
-## Acesso ao projeto
+- **HTML5, CSS3 e JavaScript** para a estrutura, interface e lógica da aplicação.
+- **Firebase Authentication** para autenticação administrativa.
+- **Cloud Firestore** para armazenamento e gerenciamento dos dados.
+- **ImageKit** para armazenamento e entrega de imagens.
+- **Cloudflare Workers** para operações protegidas no servidor e intermediação de uploads.
+- **GitHub Pages** para hospedagem da aplicação.
 
-**Aplicação em produção:**
+A arquitetura utiliza serviços independentes para separar a interface pública, os dados do catálogo, o armazenamento de imagens e as operações que exigem validação no servidor.
 
-https://cipher-169.github.io/catalogo-loja/
+## 🔐 Segurança
 
-O catálogo pode ser acessado publicamente. As funcionalidades administrativas são restritas a usuários autorizados.
+O projeto utiliza mecanismos de controle de acesso para proteger as funcionalidades administrativas e operações sensíveis.
 
-## Segurança
+- Autenticação por Firebase Authentication.
+- Autorização baseada em UIDs previamente definidos.
+- Verificação de identidade e permissões no Cloudflare Worker.
+- Credenciais privadas mantidas no ambiente do servidor.
+- Validação de operações de gerenciamento de imagens.
 
-O projeto adota medidas para proteger operações administrativas e credenciais de serviços externos.
+Tokens, chaves privadas e outras credenciais sensíveis não devem ser disponibilizados neste repositório.
 
-Entre elas:
+## 🚀 Próximos passos
 
-- Controle de acesso administrativo por identificação de usuários autorizados.
-- Verificação de autenticação nas operações protegidas.
-- Utilização de Cloudflare Workers para intermediar operações sensíveis.
-- Separação de credenciais privadas do código público do frontend.
+O projeto continua em evolução, com possibilidades de expansão planejadas:
 
-**Observação:** credenciais privadas e configurações sensíveis não devem ser disponibilizadas no repositório.
+- Recebimento de fotografias dos clientes diretamente pelo site.
+- Integração com meios de pagamento online.
+- Gerenciamento ampliado de pedidos e processos de produção.
+- Melhorias contínuas na experiência administrativa.
 
-## Desenvolvimento
+## 📌 Projeto
 
-O projeto está em evolução contínua, com foco na melhoria da experiência do cliente, na organização dos processos administrativos e na expansão gradual das funcionalidades.
+- **Aplicação:** [Fotomania — Catálogo Digital](https://cipher-169.github.io/catalogo-loja/)
+- **Repositório:** [GitHub — catalogo-loja](https://github.com/Cipher-169/catalogo-loja)
 
 ---
 
-<p align="center">
-  Desenvolvido para a <strong>Fotomania</strong>.
-</p>
+<div align="center">
+
+Desenvolvido para a **Fotomania**.
+
+*Suas lembranças, do seu jeito.* 📸
+
+</div>
